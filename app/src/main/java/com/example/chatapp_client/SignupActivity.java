@@ -1,7 +1,8 @@
 package com.example.chatapp_client;
 
+import android.content.DialogInterface;
 import android.view.View;
-import android.widget.Toast;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 
@@ -15,17 +16,35 @@ public class SignupActivity extends AppCompatActivity {
         setContentView(R.layout.activity_signup);
         Objects.requireNonNull(getSupportActionBar()).hide();
 
-        findViewById(R.id.login).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Toast.makeText(SignupActivity.this, "Login", Toast.LENGTH_SHORT).show();
-            }
-        });
-
         findViewById(R.id.signup).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(SignupActivity.this, "Signup", Toast.LENGTH_SHORT).show();
+                View view = getLayoutInflater().inflate(R.layout.signup_dialog, null);
+                AlertDialog.Builder builder = new AlertDialog.Builder(SignupActivity.this);
+                builder.setNegativeButton(getString(android.R.string.cancel),
+                    new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                        }
+                    });
+                builder.setView(view).show();
+            }
+        });
+
+        findViewById(R.id.login).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                View view = getLayoutInflater().inflate(R.layout.login_dialog, null);
+                AlertDialog.Builder builder = new AlertDialog.Builder(SignupActivity.this);
+                builder.setNegativeButton(getString(android.R.string.cancel),
+                    new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                        }
+                    });
+                builder.setView(view).show();
             }
         });
     }
