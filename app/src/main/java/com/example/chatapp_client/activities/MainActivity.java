@@ -1,10 +1,11 @@
-package com.example.chatapp_client;
+package com.example.chatapp_client.activities;
 
 import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
 import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
+import com.example.chatapp_client.R;
 
 import java.util.Objects;
 
