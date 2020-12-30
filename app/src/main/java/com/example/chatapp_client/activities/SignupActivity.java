@@ -10,6 +10,7 @@ import android.os.Bundle;
 import com.auth0.android.jwt.Claim;
 import com.auth0.android.jwt.JWT;
 import com.example.chatapp_client.R;
+import com.example.chatapp_client.appPreferences.AppPreferences;
 import com.example.chatapp_client.retrofit.RetrofitInterface;
 import com.example.chatapp_client.utils.LoginResult;
 import com.example.chatapp_client.utils.Helpers;
@@ -26,7 +27,7 @@ import java.util.regex.Pattern;
 
 public class SignupActivity extends AppCompatActivity {
     private RetrofitInterface retrofitInterface;
-
+    private AppPreferences _appPrefs;
     Context context = SignupActivity.this;
     Helpers newH = new Helpers(context);
     @Override
@@ -35,6 +36,8 @@ public class SignupActivity extends AppCompatActivity {
         setContentView(R.layout.activity_signup);
         Objects.requireNonNull(getSupportActionBar()).hide();
 
+        _appPrefs = new AppPreferences(getApplicationContext());
+
         String BASE_URL = "http://192.168.100.3:3001";
         Retrofit retrofit = new Retrofit.Builder()
             .baseUrl(BASE_URL)
@@ -42,6 +45,19 @@ public class SignupActivity extends AppCompatActivity {
             .build();
 
         retrofitInterface = retrofit.create(RetrofitInterface.class);
+
+        Boolean isToken = _appPrefs.getIsToken();
+        Boolean remember = _appPrefs.getRemember();
+        if(remember.equals(true)) {
+            if (isToken.equals(true)) {
+                Toast.makeText(context, "is ok", Toast.LENGTH_SHORT).show();
+//                Intent  = new Intent(getApplicationContext(), .class);
+//                startActivity();
+            }
+        }else if(remember.equals(false)){
+            _appPrefs.saveRemember(false);
+            _appPrefs.saveIsToken(false);
+        }
 
         findViewById(R.id.login).setOnClickListener(view -> handleLoginDialog());
         findViewById(R.id.signup).setOnClickListener(view -> handleSignupDialog());
@@ -76,6 +92,8 @@ public class SignupActivity extends AppCompatActivity {
 //                                        finish();
 //                                        startActivity(getIntent());
                         } else if (response.code() == 400) {
+                            _appPrefs.saveIsToken(false);
+                            _appPrefs.saveRemember(false);
                             Toast.makeText(SignupActivity.this,
                                 "User already exists.", Toast.LENGTH_LONG).show();
                         }
@@ -90,7 +108,6 @@ public class SignupActivity extends AppCompatActivity {
                 });
             }
         });
-
     }
     private void handleLoginDialog() {
         View view = getLayoutInflater().inflate(R.layout.login_dialog, null);
@@ -102,11 +119,11 @@ public class SignupActivity extends AppCompatActivity {
         Button loginBtn = view.findViewById(R.id.login);
         Button remindPassBtn = view.findViewById(R.id.remindPassBtn);
         final EditText emailEdit = view.findViewById(R.id.emailEditLgn);
-        String strEmail = emailEdit.getText().toString();
-        Boolean velStrEmail = validationEmailAddress(emailEdit);
+//        String strEmail = emailEdit.getText().toString();
+//        Boolean velStrEmail = validationEmailAddress(emailEdit);
         final EditText passwordEdit = view.findViewById(R.id.passwordEditLgn);
-        String strPasswordEdit = passwordEdit.getText().toString();
-        Boolean valStrPass = validationPassword(passwordEdit);
+//        String strPasswordEdit = passwordEdit.getText().toString();
+//        Boolean valStrPass = validationPassword(passwordEdit);
         final CheckBox rememberBox = view.findViewById(R.id.checkBoxRem);
         TextView remindPass = view.findViewById(R.id.remindPass);
 
@@ -132,13 +149,55 @@ public class SignupActivity extends AppCompatActivity {
                                 result.setEmail(email.asString());
                                 result.setLoged(true);
 
-                                Toast.makeText(SignupActivity.this, "Zalogowany",
+                                _appPrefs.saveToken(String.valueOf(jwt));
+                                _appPrefs.saveIsToken(true);
+                                _appPrefs.saveName(result.getName());
+                                _appPrefs.saveEmail(result.getEmail());
+                                _appPrefs.saveRemember(rememberBox.isChecked());
+
+                                Toast.makeText(SignupActivity.this, "Token "+result.getToken(),
                                     Toast.LENGTH_LONG).show();
                             } else if (response.code() == 404) {
                                 Toast.makeText(SignupActivity.this, "Wrong credentials",
                                     Toast.LENGTH_LONG).show();
+                                newH.closeKeyboard(SignupActivity.this);
+
+                                remindPass.setText("Remind password");
+                                remindPass.setOnClickListener(v1 -> {
+                                    rememberBox.setVisibility(View.GONE);
+                                    loginBtn.setVisibility(View.GONE);
+                                    remindPass.setVisibility(View.GONE);
+                                    passwordEdit.setVisibility(View.GONE);
+                                    remindPassBtn.setVisibility(View.VISIBLE);
+                                    remindPassBtn.setOnClickListener(v11 -> {
+                                        HashMap<String, String> map1 = new HashMap<>();
+                                        map1.put("email", emailEdit.getText().toString());
+                                        Call<Void> call1 = retrofitInterface.executeRememberPassword(map1);
+                                        call1.enqueue(new Callback<Void>() {
+                                            @Override
+                                            public void onResponse(Call<Void> call1, Response<Void> response1) {
+                                                if (response1.code() == 200) {
+                                                    Toast.makeText(SignupActivity.this,
+                                                        "If email was correct password was sent on email.", Toast.LENGTH_LONG).show();
+                                                    newH.closeKeyboard(SignupActivity.this);
+                                                } else if (response1.code() == 400) {
+                                                    Toast.makeText(SignupActivity.this,
+                                                        "Wrong email", Toast.LENGTH_LONG).show();
+                                                }
+//                                                        Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+//                                                        startActivity(intent);
+                                                newH.closeKeyboard(SignupActivity.this);
+                                            }
+
+                                            @Override
+                                            public void onFailure(Call<Void> call1, Throwable t) {
+                                                Toast.makeText(SignupActivity.this, t.getMessage(),
+                                                    Toast.LENGTH_LONG).show();
+                                            }
+                                        });
+                                    });
+                                });
                             }
-                            newH.closeKeyboard(SignupActivity.this);
                         }
 
                         @Override
