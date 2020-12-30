@@ -1,6 +1,6 @@
 package com.example.chatapp_client.activities;
 
-import android.content.DialogInterface;
+import android.content.Context;
 import android.util.Patterns;
 import android.view.View;
 import android.widget.*;
@@ -12,6 +12,7 @@ import com.auth0.android.jwt.JWT;
 import com.example.chatapp_client.R;
 import com.example.chatapp_client.retrofit.RetrofitInterface;
 import com.example.chatapp_client.utils.LoginResult;
+import com.example.chatapp_client.utils.Helpers;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -26,6 +27,8 @@ import java.util.regex.Pattern;
 public class SignupActivity extends AppCompatActivity {
     private RetrofitInterface retrofitInterface;
 
+    Context context = SignupActivity.this;
+    Helpers newH = new Helpers(context);
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -76,6 +79,7 @@ public class SignupActivity extends AppCompatActivity {
                             Toast.makeText(SignupActivity.this,
                                 "User already exists.", Toast.LENGTH_LONG).show();
                         }
+                        newH.closeKeyboard(SignupActivity.this);
                     }
 
                     @Override
@@ -134,6 +138,7 @@ public class SignupActivity extends AppCompatActivity {
                                 Toast.makeText(SignupActivity.this, "Wrong credentials",
                                     Toast.LENGTH_LONG).show();
                             }
+                            newH.closeKeyboard(SignupActivity.this);
                         }
 
                         @Override
@@ -143,9 +148,11 @@ public class SignupActivity extends AppCompatActivity {
                         }
                     });
                 }else{
+                    newH.closeKeyboard(SignupActivity.this);
                     Toast.makeText(SignupActivity.this, "Enter the password", Toast.LENGTH_SHORT).show();
                 }
             }else{
+                newH.closeKeyboard(SignupActivity.this);
                 Toast.makeText(SignupActivity.this, "Enter the email", Toast.LENGTH_SHORT).show();
             }
         });
