@@ -1,17 +1,17 @@
 package com.example.chatapp_client.activities;
 
-import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.util.Patterns;
 import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.Toast;
+import android.widget.*;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
+import com.auth0.android.jwt.Claim;
+import com.auth0.android.jwt.JWT;
 import com.example.chatapp_client.R;
 import com.example.chatapp_client.retrofit.RetrofitInterface;
+import com.example.chatapp_client.utils.LoginResult;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -24,7 +24,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class SignupActivity extends AppCompatActivity {
-    private Retrofit retrofit;
     private RetrofitInterface retrofitInterface;
 
     @Override
@@ -34,95 +33,130 @@ public class SignupActivity extends AppCompatActivity {
         Objects.requireNonNull(getSupportActionBar()).hide();
 
         String BASE_URL = "http://192.168.100.3:3001";
-        retrofit = new Retrofit.Builder()
+        Retrofit retrofit = new Retrofit.Builder()
             .baseUrl(BASE_URL)
             .addConverterFactory(GsonConverterFactory.create())
             .build();
 
         retrofitInterface = retrofit.create(RetrofitInterface.class);
 
-        findViewById(R.id.signup).setOnClickListener(v -> {
-            View view = getLayoutInflater().inflate(R.layout.signup_dialog, null);
-            AlertDialog.Builder builder = new AlertDialog.Builder(SignupActivity.this);
-            builder.setNegativeButton(getString(android.R.string.cancel),
-                new DialogInterface.OnClickListener() {
+        findViewById(R.id.login).setOnClickListener(view -> handleLoginDialog());
+        findViewById(R.id.signup).setOnClickListener(view -> handleSignupDialog());
+    }
+    private void handleSignupDialog(){
+        View view = getLayoutInflater().inflate(R.layout.signup_dialog, null);
+        AlertDialog.Builder builder = new AlertDialog.Builder(SignupActivity.this);
+        builder.setNegativeButton(getString(android.R.string.cancel),
+            (dialog, which) -> dialog.dismiss());
+        if (!isFinishing()) {
+            builder.setView(view).show();
+        }
+        Button signupBtn = view.findViewById(R.id.signup);
+        final EditText nameEdit = view.findViewById(R.id.nameEdit);
+        final EditText emailEdit = view.findViewById(R.id.emailEdit);
+        final EditText passwordEdit = view.findViewById(R.id.passwordEdit);
+        signupBtn.setOnClickListener(v1 -> {
+            Boolean validEmailAddress = validationEmailAddress(emailEdit);
+            Boolean validPassword = validationPassword(emailEdit);
+            if(validEmailAddress && validPassword){
+                HashMap<String, String> map = new HashMap<>();
+                map.put("name", nameEdit.getText().toString());
+                map.put("email", emailEdit.getText().toString());
+                map.put("password", passwordEdit.getText().toString());
+                Call<Void> call = retrofitInterface.executeSignup(map);
+                call.enqueue(new Callback<Void>() {
                     @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        onPause(dialog);
-                    }
-                });
-            if (!isFinishing()) {
-                builder.setView(view).show();
-            }
-            Button signupBtn = view.findViewById(R.id.signup);
-            final EditText nameEdit = view.findViewById(R.id.nameEdit);
-            final EditText emailEdit = view.findViewById(R.id.emailEdit);
-            final EditText passwordEdit = view.findViewById(R.id.passwordEdit);
-            signupBtn.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Boolean validEmailAddress = validationEmailAddress(emailEdit);
-                    Boolean validPassword = validationPassword(emailEdit);
-                    if(validEmailAddress && validPassword){
-                        HashMap<String, String> map = new HashMap<>();
-                        map.put("name", nameEdit.getText().toString());
-                        map.put("email", emailEdit.getText().toString());
-                        map.put("password", passwordEdit.getText().toString());
-                        Call<Void> call = retrofitInterface.executeSignup(map);
-                        call.enqueue(new Callback<Void>() {
-                            @Override
-                            public void onResponse(Call<Void> call, Response<Void> response) {
-                                if (response.code() == 200) {
-                                    Toast.makeText(SignupActivity.this,
-                                        "Signed up successfully. Check your email and confirm account!", Toast.LENGTH_LONG).show();
+                    public void onResponse(Call<Void> call, Response<Void> response) {
+                        if (response.code() == 200) {
+                            Toast.makeText(SignupActivity.this,
+                                "Signed up successfully. Check your email and confirm account!", Toast.LENGTH_LONG).show();
 //                                        finish();
 //                                        startActivity(getIntent());
-                                } else if (response.code() == 400) {
-                                    Toast.makeText(SignupActivity.this,
-                                        "User already exists.", Toast.LENGTH_LONG).show();
-                                }
-                            }
-
-                            @Override
-                            public void onFailure(Call<Void> call, Throwable t) {
-                                Toast.makeText(SignupActivity.this, t.getMessage(),
-                                    Toast.LENGTH_LONG).show();
-                            }
-                        });
-                    }
-                }
-            });
-        });
-
-
-        findViewById(R.id.login).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                View view = getLayoutInflater().inflate(R.layout.login_dialog, null);
-                AlertDialog.Builder builder = new AlertDialog.Builder(SignupActivity.this);
-                builder.setNegativeButton(getString(android.R.string.cancel),
-                    new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
+                        } else if (response.code() == 400) {
+                            Toast.makeText(SignupActivity.this,
+                                "User already exists.", Toast.LENGTH_LONG).show();
                         }
-                    });
-                builder.setView(view).show();
+                    }
+
+                    @Override
+                    public void onFailure(Call<Void> call, Throwable t) {
+                        Toast.makeText(SignupActivity.this, t.getMessage(),
+                            Toast.LENGTH_LONG).show();
+                    }
+                });
             }
         });
-        if (isFinishing()) {
-            onPause();
-        }
+
     }
-    public void onPause(DialogInterface dialog){
-        runOnUiThread(dialog::dismiss);
-        System.out.println("dziala");
+    private void handleLoginDialog() {
+        View view = getLayoutInflater().inflate(R.layout.login_dialog, null);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setNegativeButton(getString(android.R.string.cancel),
+            (dialog, which) -> dialog.dismiss());
+        builder.setView(view).show();
+
+        Button loginBtn = view.findViewById(R.id.login);
+        Button remindPassBtn = view.findViewById(R.id.remindPassBtn);
+        final EditText emailEdit = view.findViewById(R.id.emailEditLgn);
+        String strEmail = emailEdit.getText().toString();
+        Boolean velStrEmail = validationEmailAddress(emailEdit);
+        final EditText passwordEdit = view.findViewById(R.id.passwordEditLgn);
+        String strPasswordEdit = passwordEdit.getText().toString();
+        Boolean valStrPass = validationPassword(passwordEdit);
+        final CheckBox rememberBox = view.findViewById(R.id.checkBoxRem);
+        TextView remindPass = view.findViewById(R.id.remindPass);
+
+        loginBtn.setOnClickListener(v -> {
+            if(emailEdit.getText().toString().trim().length() > 0){
+                if(passwordEdit.getText().toString().trim().length() > 0){
+                    HashMap<String, String> map = new HashMap<>();
+                    map.put("email", emailEdit.getText().toString());
+                    map.put("password", passwordEdit.getText().toString());
+
+                    Call<LoginResult> call = retrofitInterface.executeLogin(map);
+                    call.enqueue(new Callback<LoginResult>() {
+                        @Override
+                        public void onResponse(Call<LoginResult> call, Response<LoginResult> response) {
+                            if (response.code() == 200) {
+                                LoginResult result = response.body();
+                                String token = result.getJwtToken();
+                                result.setToken(token);
+                                JWT jwt = new JWT(token);
+                                Claim name = jwt.getClaim("name");
+                                result.setName(name.asString());
+                                Claim email = jwt.getClaim("email");
+                                result.setEmail(email.asString());
+                                result.setLoged(true);
+
+                                Toast.makeText(SignupActivity.this, "Zalogowany",
+                                    Toast.LENGTH_LONG).show();
+                            } else if (response.code() == 404) {
+                                Toast.makeText(SignupActivity.this, "Wrong credentials",
+                                    Toast.LENGTH_LONG).show();
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(Call<LoginResult> call, Throwable t) {
+                            Toast.makeText(SignupActivity.this, t.getMessage(),
+                                Toast.LENGTH_LONG).show();
+                        }
+                    });
+                }else{
+                    Toast.makeText(SignupActivity.this, "Enter the password", Toast.LENGTH_SHORT).show();
+                }
+            }else{
+                Toast.makeText(SignupActivity.this, "Enter the email", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
+
     public boolean validationEmailAddress(EditText email){
         String emailInput = email.getText().toString();
         if(!emailInput.isEmpty() && Patterns.EMAIL_ADDRESS.matcher(emailInput).matches()){
             return true;
         }else{
+//            Toast.makeText(this, "Make sure email address is correct", Toast.LENGTH_SHORT).show();
             return false;
         }
     }

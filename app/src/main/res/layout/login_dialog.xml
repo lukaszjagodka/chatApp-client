@@ -11,7 +11,7 @@
             android:layout_marginTop="10dp"
             android:layout_marginLeft="10dp"
             android:layout_marginRight="10dp"
-            android:id="@+id/emailEdit"
+            android:id="@+id/emailEditLgn"
             android:autofillHints=""
             android:inputType="textEmailAddress"/>
 
@@ -22,7 +22,7 @@
             android:layout_marginTop="5dp"
             android:layout_marginLeft="10dp"
             android:layout_marginRight="10dp"
-            android:id="@+id/passwordEdit"
+            android:id="@+id/passwordEditLgn"
             android:inputType="textPassword"
             android:importantForAutofill="no"/>
 
