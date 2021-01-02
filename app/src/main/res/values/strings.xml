@@ -7,4 +7,6 @@
     <string name="remind_password">Remind password</string>
     <string name="log_in">Log in</string>
     <string name="remember">Remember</string>
+    <string name="change_password">change password</string>
+    <string name="logout">logout</string>
 </resources>

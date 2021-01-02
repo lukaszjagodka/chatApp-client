@@ -1,6 +1,7 @@
 package com.example.chatapp_client.activities;
 
 import android.content.Context;
+import android.content.Intent;
 import android.util.Patterns;
 import android.view.View;
 import android.widget.*;
@@ -50,13 +51,14 @@ public class SignupActivity extends AppCompatActivity {
         Boolean remember = _appPrefs.getRemember();
         if(remember.equals(true)) {
             if (isToken.equals(true)) {
-                Toast.makeText(context, "is ok", Toast.LENGTH_SHORT).show();
-//                Intent  = new Intent(getApplicationContext(), .class);
-//                startActivity();
+                Intent intent = new Intent(getApplicationContext(), SearchActivity.class);
+                startActivity(intent);
             }
         }else if(remember.equals(false)){
             _appPrefs.saveRemember(false);
             _appPrefs.saveIsToken(false);
+            _appPrefs.saveToken("");
+            _appPrefs.saveEmail("");
         }
 
         findViewById(R.id.login).setOnClickListener(view -> handleLoginDialog());
@@ -89,8 +91,8 @@ public class SignupActivity extends AppCompatActivity {
                         if (response.code() == 200) {
                             Toast.makeText(SignupActivity.this,
                                 "Signed up successfully. Check your email and confirm account!", Toast.LENGTH_LONG).show();
-//                                        finish();
-//                                        startActivity(getIntent());
+                            Intent intent = new Intent(getApplicationContext(), SignupActivity.class);
+                            startActivity(intent);
                         } else if (response.code() == 400) {
                             _appPrefs.saveIsToken(false);
                             _appPrefs.saveRemember(false);
@@ -155,8 +157,8 @@ public class SignupActivity extends AppCompatActivity {
                                 _appPrefs.saveEmail(result.getEmail());
                                 _appPrefs.saveRemember(rememberBox.isChecked());
 
-                                Toast.makeText(SignupActivity.this, "Token "+result.getToken(),
-                                    Toast.LENGTH_LONG).show();
+                                Intent intent = new Intent(getApplicationContext(), SearchActivity.class);
+                                startActivity(intent);
                             } else if (response.code() == 404) {
                                 Toast.makeText(SignupActivity.this, "Wrong credentials",
                                     Toast.LENGTH_LONG).show();
