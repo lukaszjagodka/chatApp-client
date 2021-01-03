@@ -6,6 +6,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
 import android.text.Editable;
+import android.text.Html;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.Menu;
@@ -189,13 +190,47 @@ public class SearchActivity extends AppCompatActivity {
                 }
             }
         });
+        // delete record
+        addedUsersListView.setOnItemLongClickListener((parent, view, position, id) -> {
+            String chosenUser = "";
+            int count = 0;
+            for (Map.Entry<Integer, FindedUser> entry : helperMap.entrySet()) {
+                if(id == count) {
+                    chosenUser = entry.getValue().getName();
+                }
+                count++;
+            }
+            new android.app.AlertDialog.Builder(SearchActivity.this)
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .setTitle("Delete conversation?")
+                .setMessage(Html.fromHtml("\t\t\t\t\t\t"+"With "+"<b>"+chosenUser+"</b>", Html.FROM_HTML_MODE_LEGACY))
+                .setPositiveButton("Yes", (dialog, which) -> {
+                    Integer itemToDelete=0;
+                    int count1 = 0;
+                    for (Map.Entry<Integer, FindedUser> entry : helperMap.entrySet()) {
+                        if(id == count1) {
+                            itemToDelete = entry.getKey();
+                        }
+                        count1++;
+                    }
+                    boolean test = deleteFromDb(itemToDelete); //send timestamp
+                    if(test) {
+                        helperMap.remove(itemToDelete);
+                        updateListView();
+                        MyAdapterHash addedUsersAdapter = new MyAdapterHash(helperMap);
+                        addedUsersListView.setAdapter(addedUsersAdapter);
+                        addedUsersAdapter.notifyDataSetChanged();
+                    }
+                }).setNegativeButton("No", null)
+                .show();
+            return true;
+        });
     }
 
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
     }
-
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.action_chpassword) {
@@ -272,6 +307,19 @@ public class SearchActivity extends AppCompatActivity {
         messengerDB.execSQL("DELETE FROM addedUsers");
 //        messengerDB.execSQL("DROP TABLE addedUsers");
         System.out.println("Delete table");
+    }
+    public boolean deleteFromDb(Integer itemToDelete){
+        System.out.println(itemToDelete);
+        for (Map.Entry<Integer, FindedUser> entry : helperMap.entrySet()) {
+            if(itemToDelete.equals(entry.getKey())){
+                String sql = "DELETE FROM addedUsers WHERE timestamp = "+itemToDelete;
+                System.out.println(sql);
+                SQLiteStatement statement = messengerDB.compileStatement(sql);
+                statement.execute();
+                return true;
+            }
+        }
+        return false;
     }
     public void updateListView() {
         Cursor c = messengerDB.rawQuery("SELECT * FROM addedUsers", null);
