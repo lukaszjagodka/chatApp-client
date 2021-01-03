@@ -1,12 +1,14 @@
 package com.example.chatapp_client.activities;
 
 import android.content.Intent;
+import android.database.sqlite.SQLiteDatabase;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.Toast;
+import android.widget.*;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
@@ -14,21 +16,83 @@ import com.example.chatapp_client.R;
 import com.example.chatapp_client.appPreferences.AppPreferences;
 import com.example.chatapp_client.retrofit.RetrofitClient;
 import com.example.chatapp_client.utils.Helpers;
+import com.example.chatapp_client.utils.MyAdapter;
+import com.example.chatapp_client.utils.SearchResult;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class SearchActivity extends AppCompatActivity {
     public AppPreferences _appPrefs;
     RetrofitClient client = new RetrofitClient();
+    ArrayList<Object> contactsUsers = new ArrayList<>();
+    HashMap<String, String> recivedUsers = new HashMap<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_search);
         _appPrefs = new AppPreferences(getApplicationContext());
+
+        ListView contactListView = findViewById(R.id.searchView);
+        EditText searchText = findViewById(R.id.searchText);
+        TextView findedUsersLabel = findViewById(R.id.findedUsersLabel);
+        HashMap<String, String> searchDataMap = new HashMap<>();
+
+        searchText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                searchDataMap.put("name", s.toString());
+                searchDataMap.put("more", "1");
+                client.getServie().executeSearchUser(searchDataMap).enqueue(new Callback<SearchResult>() {
+                    @Override
+                    public void onResponse(Call<SearchResult> call, Response<SearchResult> response) {
+                        if (response.code() == 200) {
+                            SearchResult searchResult = response.body();
+                            assert searchResult != null;
+                            contactsUsers = searchResult.getFindedUsers();
+                            if(contactsUsers != null){
+                                if(contactsUsers.size() > 0){
+                                    JSONArray jsonarray = new JSONArray(contactsUsers);
+                                    try {
+                                        for(int i=0;i < jsonarray.length();i++) {
+                                            JSONObject e = jsonarray.getJSONObject(i);
+                                            recivedUsers.put(e.getString("id"), e.getString("name"));
+                                        }
+                                        MyAdapter arrayAdapter = new MyAdapter(recivedUsers);
+                                        contactListView.setAdapter(arrayAdapter);
+                                    } catch (JSONException e) {
+                                        Log.e("log_tag", "Error parsing data "+e.toString());
+                                    }
+                                }
+                            }
+                        }else if (response.code() == 400) {
+                            Toast.makeText(SearchActivity.this,  response.message(), Toast.LENGTH_LONG).show();
+                        }
+                    }
+                    @Override
+                    public void onFailure(Call<SearchResult> call, Throwable t) {
+                        Toast.makeText(SearchActivity.this, t.getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                });
+            }
+            @Override
+            public void afterTextChanged(Editable s) {
+                recivedUsers.clear();
+                MyAdapter arrayAdapter = new MyAdapter(recivedUsers);
+                arrayAdapter.notifyDataSetChanged();
+                contactListView.setAdapter(arrayAdapter);
+                contactListView.setVisibility(View.VISIBLE);
+            }
+        });
     }
 
     public boolean onCreateOptionsMenu(Menu menu) {
