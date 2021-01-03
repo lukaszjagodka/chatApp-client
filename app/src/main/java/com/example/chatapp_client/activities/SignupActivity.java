@@ -12,6 +12,7 @@ import com.auth0.android.jwt.Claim;
 import com.auth0.android.jwt.JWT;
 import com.example.chatapp_client.R;
 import com.example.chatapp_client.appPreferences.AppPreferences;
+import com.example.chatapp_client.retrofit.RetrofitClient;
 import com.example.chatapp_client.retrofit.RetrofitInterface;
 import com.example.chatapp_client.utils.LoginResult;
 import com.example.chatapp_client.utils.Helpers;
@@ -27,25 +28,18 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class SignupActivity extends AppCompatActivity {
-    private RetrofitInterface retrofitInterface;
+
     private AppPreferences _appPrefs;
     Context context = SignupActivity.this;
     Helpers newH = new Helpers(context);
-    @Override
+    RetrofitClient client = new RetrofitClient();
+
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_signup);
         Objects.requireNonNull(getSupportActionBar()).hide();
 
         _appPrefs = new AppPreferences(getApplicationContext());
-
-        String BASE_URL = "http://192.168.100.3:3001";
-        Retrofit retrofit = new Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build();
-
-        retrofitInterface = retrofit.create(RetrofitInterface.class);
 
         Boolean isToken = _appPrefs.getIsToken();
         Boolean remember = _appPrefs.getRemember();
@@ -77,15 +71,14 @@ public class SignupActivity extends AppCompatActivity {
         final EditText emailEdit = view.findViewById(R.id.emailEdit);
         final EditText passwordEdit = view.findViewById(R.id.passwordEdit);
         signupBtn.setOnClickListener(v1 -> {
-            Boolean validEmailAddress = validationEmailAddress(emailEdit);
-            Boolean validPassword = validationPassword(emailEdit);
+            Boolean validEmailAddress = Helpers.validationEmailAddress(emailEdit, SignupActivity.this);
+            Boolean validPassword = Helpers.validationPassword(emailEdit, SignupActivity.this);
             if(validEmailAddress && validPassword){
                 HashMap<String, String> map = new HashMap<>();
                 map.put("name", nameEdit.getText().toString());
                 map.put("email", emailEdit.getText().toString());
                 map.put("password", passwordEdit.getText().toString());
-                Call<Void> call = retrofitInterface.executeSignup(map);
-                call.enqueue(new Callback<Void>() {
+                client.getServie().executeSignup(map).enqueue(new Callback<Void>() {
                     @Override
                     public void onResponse(Call<Void> call, Response<Void> response) {
                         if (response.code() == 200) {
@@ -121,11 +114,7 @@ public class SignupActivity extends AppCompatActivity {
         Button loginBtn = view.findViewById(R.id.login);
         Button remindPassBtn = view.findViewById(R.id.remindPassBtn);
         final EditText emailEdit = view.findViewById(R.id.emailEditLgn);
-//        String strEmail = emailEdit.getText().toString();
-//        Boolean velStrEmail = validationEmailAddress(emailEdit);
         final EditText passwordEdit = view.findViewById(R.id.passwordEditLgn);
-//        String strPasswordEdit = passwordEdit.getText().toString();
-//        Boolean valStrPass = validationPassword(passwordEdit);
         final CheckBox rememberBox = view.findViewById(R.id.checkBoxRem);
         TextView remindPass = view.findViewById(R.id.remindPass);
 
@@ -136,8 +125,7 @@ public class SignupActivity extends AppCompatActivity {
                     map.put("email", emailEdit.getText().toString());
                     map.put("password", passwordEdit.getText().toString());
 
-                    Call<LoginResult> call = retrofitInterface.executeLogin(map);
-                    call.enqueue(new Callback<LoginResult>() {
+                    client.getServie().executeLogin(map).enqueue(new Callback<LoginResult>() {
                         @Override
                         public void onResponse(Call<LoginResult> call, Response<LoginResult> response) {
                             if (response.code() == 200) {
@@ -174,25 +162,25 @@ public class SignupActivity extends AppCompatActivity {
                                     remindPassBtn.setOnClickListener(v11 -> {
                                         HashMap<String, String> map1 = new HashMap<>();
                                         map1.put("email", emailEdit.getText().toString());
-                                        Call<Void> call1 = retrofitInterface.executeRememberPassword(map1);
-                                        call1.enqueue(new Callback<Void>() {
+                                        client.getServie().executeRememberPassword(map1).enqueue(new Callback<Void>() {
                                             @Override
-                                            public void onResponse(Call<Void> call1, Response<Void> response1) {
-                                                if (response1.code() == 200) {
-                                                    Toast.makeText(SignupActivity.this,
-                                                        "If email was correct password was sent on email.", Toast.LENGTH_LONG).show();
+                                            public void onResponse(Call<Void> call, Response<Void> response) {
+                                                if (response.isSuccessful()) {
+                                                    if (response.code() == 200) {
+                                                        Toast.makeText(SignupActivity.this,
+                                                            "If email was correct password was sent on email.", Toast.LENGTH_LONG).show();
+                                                        Intent intent = new Intent(getApplicationContext(), SignupActivity.class);
+                                                        startActivity(intent);
+                                                        newH.closeKeyboard(SignupActivity.this);
+                                                    } else if (response.code() == 400) {
+                                                        Toast.makeText(SignupActivity.this,
+                                                            "Wrong email", Toast.LENGTH_LONG).show();
+                                                    }
                                                     newH.closeKeyboard(SignupActivity.this);
-                                                } else if (response1.code() == 400) {
-                                                    Toast.makeText(SignupActivity.this,
-                                                        "Wrong email", Toast.LENGTH_LONG).show();
                                                 }
-//                                                        Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-//                                                        startActivity(intent);
-                                                newH.closeKeyboard(SignupActivity.this);
                                             }
-
                                             @Override
-                                            public void onFailure(Call<Void> call1, Throwable t) {
+                                            public void onFailure(Call<Void> call, Throwable t) {
                                                 Toast.makeText(SignupActivity.this, t.getMessage(),
                                                     Toast.LENGTH_LONG).show();
                                             }
@@ -201,7 +189,6 @@ public class SignupActivity extends AppCompatActivity {
                                 });
                             }
                         }
-
                         @Override
                         public void onFailure(Call<LoginResult> call, Throwable t) {
                             Toast.makeText(SignupActivity.this, t.getMessage(),
@@ -219,37 +206,35 @@ public class SignupActivity extends AppCompatActivity {
         });
     }
 
-    public boolean validationEmailAddress(EditText email){
-        String emailInput = email.getText().toString();
-        if(!emailInput.isEmpty() && Patterns.EMAIL_ADDRESS.matcher(emailInput).matches()){
-            return true;
-        }else{
-//            Toast.makeText(this, "Make sure email address is correct", Toast.LENGTH_SHORT).show();
-            return false;
-        }
-    }
-    public boolean validationPassword(EditText passwordEdit) {
-        if(passwordEdit.length() != 0){
-            if (passwordEdit.getText().toString().length() < 7 && !isValidPassword(passwordEdit.getText().toString())) {
-                Toast.makeText(this,"Password incorrect", Toast.LENGTH_LONG).show();
-                return false;
-            } else {
-                return true;
-            }
-        }else {
-            return false;
-        }
-    }
-    public static boolean isValidPassword(final String password) {
-
-        Pattern pattern;
-        Matcher matcher;
-        final String PASSWORD_PATTERN = "^(?=.*[0-9])(?=.*[A-Z])(?=.*[@#$%^&+=!])(?=\\S+$).{4,}$";
-        pattern = Pattern.compile(PASSWORD_PATTERN);
-        matcher = pattern.matcher(password);
-
-        return matcher.matches();
-
-    }
-
+//    public boolean validationEmailAddress(EditText email){
+//        String emailInput = email.getText().toString();
+//        if(!emailInput.isEmpty() && Patterns.EMAIL_ADDRESS.matcher(emailInput).matches()){
+//            return true;
+//        }else{
+//            return false;
+//        }
+//    }
+//    public boolean validationPassword(EditText passwordEdit) {
+//        if(passwordEdit.length() != 0){
+//            if (passwordEdit.getText().toString().length() < 5 && !isValidPassword(passwordEdit.getText().toString())) {
+//                Toast.makeText(this,"Password incorrect", Toast.LENGTH_LONG).show();
+//                return false;
+//            } else {
+//                return true;
+//            }
+//        }else {
+//            return false;
+//        }
+//    }
+//    public static boolean isValidPassword(final String password) {
+//
+//        Pattern pattern;
+//        Matcher matcher;
+//        final String PASSWORD_PATTERN = "^(?=.*[0-9])(?=.*[A-Z])(?=.*[@#$%^&+=!])(?=\\S+$).{4,}$";
+//        pattern = Pattern.compile(PASSWORD_PATTERN);
+//        matcher = pattern.matcher(password);
+//
+//        return matcher.matches();
+//
+//    }
 }
