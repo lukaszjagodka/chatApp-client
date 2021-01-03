@@ -1,18 +1,66 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout
-        xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:tools="http://schemas.android.com/tools"
-        xmlns:app="http://schemas.android.com/apk/res-auto"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        tools:context=".activities.SearchActivity"
-        android:background="@color/colorBackground">
-
-    <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+            xmlns:tools="http://schemas.android.com/tools"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:id="@+id/scrollojt"
+            android:fillViewport="true" >
+    <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="@color/colorBackground"
-    />
+            android:layout_height="wrap_content"
+            tools:context=".activities.SearchActivity"
+            android:background="#EDEDED"
+            android:orientation="vertical"
+            android:focusable="true"
+            android:focusableInTouchMode="true">
 
-</RelativeLayout>
+        <androidx.appcompat.widget.Toolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                android:background="#EDEDED"
+        />
+        <EditText android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:layout_marginTop="15dp"
+                  android:layout_marginLeft="15dp"
+                  android:layout_marginRight="15dp"
+                  android:hint="@string/search"
+                  android:textSize="16sp"
+                  android:background="@drawable/edit_text_design"
+                  android:id="@+id/searchText"
+                  android:padding="10dp"
+                  android:inputType="text"
+                  android:importantForAutofill="no"/>
+        <TextView
+                android:text="@string/finded_users"
+                android:textColor="@color/colorPrimaryDark"
+                android:textStyle="bold"
+                android:layout_marginTop="-5dp"
+                android:layout_marginStart="25dp"
+                android:layout_below="@id/searchText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/findedUsersLabel"
+                android:visibility="invisible"/>
+        <ListView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/findedUsersLabel"
+                android:id="@+id/searchView"
+                android:layout_marginTop="-7dp"
+                android:layout_marginLeft="20dp"
+                android:layout_marginRight="20dp"
+                tools:ignore="NestedScrolling"/>
+
+        <ListView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_below="@id/findedUsersLabel"
+                android:id="@+id/addedUsers"
+                android:layout_marginTop="-7dp"
+                android:layout_marginLeft="20dp"
+                android:layout_marginRight="20dp"
+                tools:ignore="NestedScrolling"/>
+    </RelativeLayout>
+</ScrollView>

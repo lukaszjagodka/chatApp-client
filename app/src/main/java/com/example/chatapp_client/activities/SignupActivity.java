@@ -205,36 +205,4 @@ public class SignupActivity extends AppCompatActivity {
             }
         });
     }
-
-//    public boolean validationEmailAddress(EditText email){
-//        String emailInput = email.getText().toString();
-//        if(!emailInput.isEmpty() && Patterns.EMAIL_ADDRESS.matcher(emailInput).matches()){
-//            return true;
-//        }else{
-//            return false;
-//        }
-//    }
-//    public boolean validationPassword(EditText passwordEdit) {
-//        if(passwordEdit.length() != 0){
-//            if (passwordEdit.getText().toString().length() < 5 && !isValidPassword(passwordEdit.getText().toString())) {
-//                Toast.makeText(this,"Password incorrect", Toast.LENGTH_LONG).show();
-//                return false;
-//            } else {
-//                return true;
-//            }
-//        }else {
-//            return false;
-//        }
-//    }
-//    public static boolean isValidPassword(final String password) {
-//
-//        Pattern pattern;
-//        Matcher matcher;
-//        final String PASSWORD_PATTERN = "^(?=.*[0-9])(?=.*[A-Z])(?=.*[@#$%^&+=!])(?=\\S+$).{4,}$";
-//        pattern = Pattern.compile(PASSWORD_PATTERN);
-//        matcher = pattern.matcher(password);
-//
-//        return matcher.matches();
-//
-//    }
 }
