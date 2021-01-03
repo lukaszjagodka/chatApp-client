@@ -1,13 +1,17 @@
 package com.example.chatapp_client.activities;
 
+import android.app.Activity;
 import android.content.Intent;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteStatement;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.*;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -15,9 +19,7 @@ import android.os.Bundle;
 import com.example.chatapp_client.R;
 import com.example.chatapp_client.appPreferences.AppPreferences;
 import com.example.chatapp_client.retrofit.RetrofitClient;
-import com.example.chatapp_client.utils.Helpers;
-import com.example.chatapp_client.utils.MyAdapter;
-import com.example.chatapp_client.utils.SearchResult;
+import com.example.chatapp_client.utils.*;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -25,26 +27,40 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.sql.Timestamp;
+import java.util.*;
 
 public class SearchActivity extends AppCompatActivity {
     public AppPreferences _appPrefs;
     RetrofitClient client = new RetrofitClient();
+    ListView addedUsersListView, contactListView;
     ArrayList<Object> contactsUsers = new ArrayList<>();
     HashMap<String, String> recivedUsers = new HashMap<>();
+    Map<Integer, FindedUser> addedUsersMap = new LinkedHashMap<>();
+    Map<Integer, FindedUser> helperMap = new LinkedHashMap<>();
+    int userIndex;
+    SQLiteDatabase messengerDB;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_search);
+        setTitle("CommisionaireChat");
         _appPrefs = new AppPreferences(getApplicationContext());
 
-        ListView contactListView = findViewById(R.id.searchView);
+        contactListView = findViewById(R.id.searchView);
+        addedUsersListView = findViewById(R.id.addedUsers);
         EditText searchText = findViewById(R.id.searchText);
         TextView findedUsersLabel = findViewById(R.id.findedUsersLabel);
         HashMap<String, String> searchDataMap = new HashMap<>();
 
+        messengerDB = this.openOrCreateDatabase("CommisionaireDB", MODE_PRIVATE, null);
+        messengerDB.execSQL("CREATE TABLE IF NOT EXISTS addedUsers (id INTEGER PRIMARY KEY, userId INTEGER, name VARCHAR, timestamp INTEGER)");
+
+//        deleteTable();
+        updateListView();
+
+        // seach user in base
         searchText.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -91,6 +107,44 @@ public class SearchActivity extends AppCompatActivity {
                 arrayAdapter.notifyDataSetChanged();
                 contactListView.setAdapter(arrayAdapter);
                 contactListView.setVisibility(View.VISIBLE);
+                addedUsersListView.setVisibility(View.INVISIBLE);
+                findedUsersLabel.setVisibility(View.VISIBLE);
+            }
+        });
+        // chose and add user to addedUser list
+        contactListView.setOnItemClickListener((parent, view, position, id) -> {
+            Object item = contactListView.getItemAtPosition(position);
+            String itemString = String.valueOf(item);
+            if(itemString.length() > 0) {
+                int tsLong = (int) (System.currentTimeMillis()/1000);
+                int index = itemString.indexOf('=');
+                String userIdFromDb = itemString.substring(0, index);
+                int indexForId = userIdFromDb.indexOf('.');
+                String StrNormalIdWthDot = userIdFromDb.substring(0, indexForId);
+                int IntNormalIdWthDot = Integer.parseInt(StrNormalIdWthDot);
+
+                String nameAddedUser = itemString.substring(index+1);
+                Date date = new Date();
+                String sql = "INSERT INTO addedUsers (userId, name, timestamp) VALUES (?,?,?)";
+                SQLiteStatement statement = messengerDB.compileStatement(sql);
+                statement.bindString(1, StrNormalIdWthDot);
+                statement.bindString(2, nameAddedUser);
+                statement.bindString(3, String.valueOf(tsLong));
+                statement.execute();
+                contactListView.setVisibility(View.GONE);
+                searchText.setText("");
+                addedUsersListView.setVisibility(View.VISIBLE);
+                findedUsersLabel.setVisibility(View.INVISIBLE);
+
+                MyAdapterHash addedUsersAdapter = new MyAdapterHash(helperMap);
+                addedUsersListView.setAdapter(addedUsersAdapter);
+                addedUsersAdapter.notifyDataSetChanged();
+
+                updateListView();
+                InputMethodManager imm = (InputMethodManager) getSystemService(
+                    Activity.INPUT_METHOD_SERVICE);
+                imm.toggleSoftInput(InputMethodManager.HIDE_IMPLICIT_ONLY, 0);
+
             }
         });
     }
@@ -135,7 +189,6 @@ public class SearchActivity extends AppCompatActivity {
                         map.put("newPassword", newPass.getText().toString());
                         map.put("email", email);
                         String authToken = "Bearer "+ token;
-                        System.out.println(actualPass.getText().toString() + " "+newPass.getText().toString()+ " "+email+" "+authToken);
 
                         client.getServie().executePasswordChange(authToken, map).enqueue(new Callback<Void>() {
                             @Override
@@ -173,4 +226,35 @@ public class SearchActivity extends AppCompatActivity {
         Intent intent = new Intent(getApplicationContext(), SignupActivity.class);
         startActivity(intent);
         }
+    public void deleteTable(){
+        messengerDB.execSQL("DELETE FROM addedUsers");
+//        messengerDB.execSQL("DROP TABLE addedUsers");
+        System.out.println("Delete table");
+    }
+    public void updateListView() {
+        Cursor c = messengerDB.rawQuery("SELECT * FROM addedUsers", null);
+        userIndex = c.getColumnIndex("userId");
+        int nameIndex = c.getColumnIndex("name"); //??
+        int timeStamp = c.getColumnIndex("timestamp");
+        addedUsersMap.clear();
+        if (c.moveToFirst()) {
+            do {
+                int intUserId = c.getInt(userIndex);
+                String nameUs = c.getString(nameIndex);
+                int intTimestamp = c.getInt(timeStamp);
+                int index = nameUs.indexOf(',');
+                String strNameAddedUser = nameUs.substring(index + 1);
+                addedUsersMap.put(intTimestamp, new FindedUser(intUserId, strNameAddedUser, intTimestamp));
+            } while (c.moveToNext());
+        }
+        Map<Integer, FindedUser> reverseSortedMap = new TreeMap<>(Collections.reverseOrder());
+        reverseSortedMap.putAll(addedUsersMap);
+        for (Map.Entry<Integer, FindedUser> entry : reverseSortedMap.entrySet()) {
+            FindedUser user = entry.getValue();
+            helperMap.put(entry.getKey(), new FindedUser(user.getId(), user.getName(), user.getTimestamp()));
+        }
+        MyAdapterHash addedUsersAdapter = new MyAdapterHash(helperMap);
+        addedUsersListView.setAdapter(addedUsersAdapter);
+        addedUsersAdapter.notifyDataSetChanged();
+    }
 }

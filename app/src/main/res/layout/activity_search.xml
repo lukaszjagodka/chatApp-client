@@ -36,7 +36,7 @@
                 android:text="@string/finded_users"
                 android:textColor="@color/colorPrimaryDark"
                 android:textStyle="bold"
-                android:layout_marginTop="-5dp"
+                android:layout_marginTop="12dp"
                 android:layout_marginStart="25dp"
                 android:layout_below="@id/searchText"
                 android:layout_width="wrap_content"
