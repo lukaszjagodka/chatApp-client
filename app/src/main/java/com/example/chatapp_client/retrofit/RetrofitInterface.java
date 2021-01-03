@@ -1,6 +1,7 @@
 package com.example.chatapp_client.retrofit;
 
 import com.example.chatapp_client.utils.LoginResult;
+import com.example.chatapp_client.utils.SearchResult;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.Header;
@@ -22,4 +23,7 @@ public interface RetrofitInterface {
   @Headers({ "Content-Type: application/json;charset=UTF-8"})
   @POST("/passwordchange")
   Call<Void> executePasswordChange(@Header("Authorization") String authToken, @Body HashMap<String, String> map);
+
+  @POST("/searchuser")
+  Call<SearchResult> executeSearchUser(@Body HashMap<String, String> map);
 }
