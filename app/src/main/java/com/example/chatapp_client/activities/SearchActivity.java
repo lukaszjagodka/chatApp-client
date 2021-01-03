@@ -138,7 +138,14 @@ public class SearchActivity extends AppCompatActivity {
                     addedUsersAdapter.notifyDataSetChanged();
 
                     updateListView();
-
+                    if(sizeOfArray()>0){
+                        for (Map.Entry<Integer, FindedUser> entry : addedUsersMap.entrySet()) {
+                            FindedUser name = entry.getValue();
+                            if(IntNormalIdWthDot == name.getId()){
+                                goToConversation(name.getId(), name.getName());
+                            }
+                        }
+                    }
                     InputMethodManager imm = (InputMethodManager) getSystemService(
                         Activity.INPUT_METHOD_SERVICE);
                     imm.toggleSoftInput(InputMethodManager.HIDE_IMPLICIT_ONLY, 0);
@@ -155,9 +162,30 @@ public class SearchActivity extends AppCompatActivity {
                     addedUsersListView.setVisibility(View.VISIBLE);
                     findedUsersLabel.setVisibility(View.INVISIBLE);
                     updateListView();
+                    if(sizeOfArray()>0){
+                        for (Map.Entry<Integer, FindedUser> entry : addedUsersMap.entrySet()) {
+                            FindedUser name = entry.getValue();
+                            if(IntNormalIdWthDot == name.getId()){
+                                goToConversation(name.getId(), name.getName());
+                            }
+                        }
+                    }
                     InputMethodManager imm = (InputMethodManager) getSystemService(
                         Activity.INPUT_METHOD_SERVICE);
                     imm.toggleSoftInput(InputMethodManager.HIDE_IMPLICIT_ONLY, 0);
+                }
+            }
+        });
+        // go to conversation
+        addedUsersListView.setOnItemClickListener((parent, view, position, id) -> {
+            if(sizeOfArray()>0){
+                int count=0;
+                for (Map.Entry<Integer, FindedUser> entry : helperMap.entrySet()) {
+                    FindedUser name = entry.getValue();
+                    if(id == count){
+                        goToConversation(name.getId(), name.getName());
+                    }
+                    count++;
                 }
             }
         });
@@ -292,5 +320,22 @@ public class SearchActivity extends AppCompatActivity {
             }
         }
         return false;
+    }
+    public int sizeOfArray() {
+        int aaa=0;
+        Cursor c = messengerDB.rawQuery("SELECT * FROM addedUsers", null);
+        if (c.moveToFirst()) {
+            do {
+                aaa++;
+            } while (c.moveToNext());
+        }
+        System.out.println("sizeOfArray: "+ aaa);
+        return aaa;
+    }
+    public void goToConversation(int userId, String userName){
+        Intent intent = new Intent(getApplicationContext(), ConversationActivity.class);
+        intent.putExtra("userId", userId);
+        intent.putExtra("name", userName);
+        startActivity(intent);
     }
 }
