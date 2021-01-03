@@ -115,7 +115,7 @@ public class SearchActivity extends AppCompatActivity {
         contactListView.setOnItemClickListener((parent, view, position, id) -> {
             Object item = contactListView.getItemAtPosition(position);
             String itemString = String.valueOf(item);
-            if(itemString.length() > 0) {
+            if(itemString.length() > 0){
                 int tsLong = (int) (System.currentTimeMillis()/1000);
                 int index = itemString.indexOf('=');
                 String userIdFromDb = itemString.substring(0, index);
@@ -125,26 +125,40 @@ public class SearchActivity extends AppCompatActivity {
 
                 String nameAddedUser = itemString.substring(index+1);
                 Date date = new Date();
-                String sql = "INSERT INTO addedUsers (userId, name, timestamp) VALUES (?,?,?)";
-                SQLiteStatement statement = messengerDB.compileStatement(sql);
-                statement.bindString(1, StrNormalIdWthDot);
-                statement.bindString(2, nameAddedUser);
-                statement.bindString(3, String.valueOf(tsLong));
-                statement.execute();
-                contactListView.setVisibility(View.GONE);
-                searchText.setText("");
-                addedUsersListView.setVisibility(View.VISIBLE);
-                findedUsersLabel.setVisibility(View.INVISIBLE);
+                System.out.println(new Timestamp(date.getTime()));
+                boolean mm = isUserExistInDb(IntNormalIdWthDot);
+                if(mm){
+                    contactListView.setVisibility(View.GONE);
+                    searchText.setText("");
+                    addedUsersListView.setVisibility(View.VISIBLE);
+                    findedUsersLabel.setVisibility(View.INVISIBLE);
 
-                MyAdapterHash addedUsersAdapter = new MyAdapterHash(helperMap);
-                addedUsersListView.setAdapter(addedUsersAdapter);
-                addedUsersAdapter.notifyDataSetChanged();
+                    MyAdapterHash addedUsersAdapter = new MyAdapterHash(helperMap);
+                    addedUsersListView.setAdapter(addedUsersAdapter);
+                    addedUsersAdapter.notifyDataSetChanged();
 
-                updateListView();
-                InputMethodManager imm = (InputMethodManager) getSystemService(
-                    Activity.INPUT_METHOD_SERVICE);
-                imm.toggleSoftInput(InputMethodManager.HIDE_IMPLICIT_ONLY, 0);
+                    updateListView();
 
+                    InputMethodManager imm = (InputMethodManager) getSystemService(
+                        Activity.INPUT_METHOD_SERVICE);
+                    imm.toggleSoftInput(InputMethodManager.HIDE_IMPLICIT_ONLY, 0);
+                }else{
+                    String sql = "INSERT INTO addedUsers (userId, name, timestamp) VALUES (?,?,?)";
+                    SQLiteStatement statement = messengerDB.compileStatement(sql);
+                    statement.bindString(1, StrNormalIdWthDot);
+                    statement.bindString(2, nameAddedUser);
+                    statement.bindString(3, String.valueOf(tsLong));
+                    statement.execute();
+
+                    contactListView.setVisibility(View.GONE);
+                    searchText.setText("");
+                    addedUsersListView.setVisibility(View.VISIBLE);
+                    findedUsersLabel.setVisibility(View.INVISIBLE);
+                    updateListView();
+                    InputMethodManager imm = (InputMethodManager) getSystemService(
+                        Activity.INPUT_METHOD_SERVICE);
+                    imm.toggleSoftInput(InputMethodManager.HIDE_IMPLICIT_ONLY, 0);
+                }
             }
         });
     }
@@ -234,7 +248,7 @@ public class SearchActivity extends AppCompatActivity {
     public void updateListView() {
         Cursor c = messengerDB.rawQuery("SELECT * FROM addedUsers", null);
         userIndex = c.getColumnIndex("userId");
-        int nameIndex = c.getColumnIndex("name"); //??
+        int nameIndex = c.getColumnIndex("name");
         int timeStamp = c.getColumnIndex("timestamp");
         addedUsersMap.clear();
         if (c.moveToFirst()) {
@@ -256,5 +270,27 @@ public class SearchActivity extends AppCompatActivity {
         MyAdapterHash addedUsersAdapter = new MyAdapterHash(helperMap);
         addedUsersListView.setAdapter(addedUsersAdapter);
         addedUsersAdapter.notifyDataSetChanged();
+    }
+    public boolean isUserExistInDb(int userIdFromDb){
+        System.out.println(userIdFromDb);
+        if(addedUsersMap.size() == 0) {
+            return false;
+        }else{
+            Cursor c = messengerDB.rawQuery("SELECT * FROM addedUsers", null);
+            userIndex = c.getColumnIndex("userId");
+            if (c.moveToFirst()) {
+                do {
+                    int intUserId = c.getInt(userIndex);
+                    if (intUserId == userIdFromDb) {
+                        int tsLong = (int) (System.currentTimeMillis()/1000);
+                        String sql = "UPDATE addedUsers SET timestamp = "+tsLong+" WHERE userId = "+userIdFromDb;
+                        SQLiteStatement statement = messengerDB.compileStatement(sql);
+                        statement.execute();
+                        return true;
+                    }
+                } while (c.moveToNext());
+            }
+        }
+        return false;
     }
 }
