@@ -9,4 +9,7 @@
     <string name="remember">Remember</string>
     <string name="change_password">change password</string>
     <string name="logout">logout</string>
+    <string name="actual_password">Actual password</string>
+    <string name="new_password">New password</string>
+    <string name="repeat_new_password">Repeat new password</string>
 </resources>
