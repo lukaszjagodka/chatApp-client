@@ -1,5 +1,7 @@
 package com.example.chatapp_client.retrofit;
 
+import com.example.chatapp_client.utils.FindedConverName;
+import com.example.chatapp_client.utils.FindedUser;
 import com.example.chatapp_client.utils.LoginResult;
 import com.example.chatapp_client.utils.SearchResult;
 import retrofit2.Call;
@@ -26,4 +28,7 @@ public interface RetrofitInterface {
 
   @POST("/searchuser")
   Call<SearchResult> executeSearchUser(@Body HashMap<String, String> map);
+
+  @POST("/searchconversation")
+  Call<FindedConverName> executeFindConvName(@Body HashMap<String, String> map);
 }
