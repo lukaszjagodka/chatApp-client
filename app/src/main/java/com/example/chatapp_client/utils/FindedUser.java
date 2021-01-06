@@ -4,11 +4,20 @@ public class FindedUser {
   private Integer id;
   private String name;
   private Integer timestamp;
+  private String conversationName;
 
-  public FindedUser(int id, String name, int timestamp) {
+  public FindedUser(int id, String name, String conversationName, int timestamp) {
     this.id = id;
     this.name = name;
     this.timestamp = timestamp;
+    this.conversationName = conversationName;
+  }
+  public String getConversationName() {
+    return conversationName;
+  }
+
+  public void setConversationName(String conversationName) {
+    this.conversationName = conversationName;
   }
 
   public Integer getId() {
