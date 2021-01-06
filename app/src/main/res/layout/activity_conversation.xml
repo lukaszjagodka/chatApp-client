@@ -8,9 +8,10 @@
         tools:context=".activities.ConversationActivity">
 
     <TextView
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content" android:id="@+id/ccoz"
-            app:layout_constraintStart_toStartOf="parent" android:layout_marginStart="190dp"
-            android:layout_marginEnd="163dp" app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" android:layout_marginTop="106dp"/>
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" android:layout_marginTop="10dp" android:textSize="18sp"
+            android:textStyle="bold"/>
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -40,6 +40,7 @@ public class SearchActivity extends AppCompatActivity {
     Map<Integer, FindedUser> addedUsersMap = new LinkedHashMap<>();
     Map<Integer, FindedUser> helperMap = new LinkedHashMap<>();
     int userIndex;
+    String conversationName;
     SQLiteDatabase messengerDB;
 
     @Override
@@ -56,7 +57,7 @@ public class SearchActivity extends AppCompatActivity {
         HashMap<String, String> searchDataMap = new HashMap<>();
 
         messengerDB = this.openOrCreateDatabase("CommisionaireDB", MODE_PRIVATE, null);
-        messengerDB.execSQL("CREATE TABLE IF NOT EXISTS addedUsers (id INTEGER PRIMARY KEY, userId INTEGER, name VARCHAR, timestamp INTEGER)");
+        messengerDB.execSQL("CREATE TABLE IF NOT EXISTS addedUsers (id INTEGER PRIMARY KEY, userId INTEGER, name VARCHAR, conversationName VARCHAR, timestamp INTEGER)");
 
 //        deleteTable();
         updateListView();
@@ -143,7 +144,7 @@ public class SearchActivity extends AppCompatActivity {
                         for (Map.Entry<Integer, FindedUser> entry : addedUsersMap.entrySet()) {
                             FindedUser name = entry.getValue();
                             if(IntNormalIdWthDot == name.getId()){
-                                goToConversation(name.getId(), name.getName());
+                                goToConversation(name.getId(), name.getName(), name.getConversationName());
                             }
                         }
                     }
@@ -151,29 +152,51 @@ public class SearchActivity extends AppCompatActivity {
                         Activity.INPUT_METHOD_SERVICE);
                     imm.toggleSoftInput(InputMethodManager.HIDE_IMPLICIT_ONLY, 0);
                 }else{
-                    String sql = "INSERT INTO addedUsers (userId, name, timestamp) VALUES (?,?,?)";
-                    SQLiteStatement statement = messengerDB.compileStatement(sql);
-                    statement.bindString(1, StrNormalIdWthDot);
-                    statement.bindString(2, nameAddedUser);
-                    statement.bindString(3, String.valueOf(tsLong));
-                    statement.execute();
+                    HashMap<String, String> map = new HashMap<>();
+                    map.put("email", _appPrefs.getEmail());
+                    map.put("recipient", StrNormalIdWthDot);
+                    client.getServie().executeFindConvName(map).enqueue(new Callback<FindedConverName>() {
+                        @Override
+                        public void onResponse(Call<FindedConverName> call, Response<FindedConverName> response) {
+                            if (response.code() == 200) {
+                                FindedConverName result = response.body();
+                                assert result != null;
+                                System.out.println(result.getConversationName());
+                                conversationName = result.getConversationName();
 
-                    contactListView.setVisibility(View.GONE);
-                    searchText.setText("");
-                    addedUsersListView.setVisibility(View.VISIBLE);
-                    findedUsersLabel.setVisibility(View.INVISIBLE);
-                    updateListView();
-                    if(sizeOfArray()>0){
-                        for (Map.Entry<Integer, FindedUser> entry : addedUsersMap.entrySet()) {
-                            FindedUser name = entry.getValue();
-                            if(IntNormalIdWthDot == name.getId()){
-                                goToConversation(name.getId(), name.getName());
+                                String sql = "INSERT INTO addedUsers (userId, name, conversationName, timestamp) VALUES (?,?,?,?)";
+                                SQLiteStatement statement = messengerDB.compileStatement(sql);
+                                statement.bindString(1, StrNormalIdWthDot);
+                                statement.bindString(2, nameAddedUser);
+                                statement.bindString(3, conversationName);
+                                statement.bindString(4, String.valueOf(tsLong));
+                                statement.execute();
+
+                                contactListView.setVisibility(View.GONE);
+                                searchText.setText("");
+                                addedUsersListView.setVisibility(View.VISIBLE);
+                                findedUsersLabel.setVisibility(View.INVISIBLE);
+                                updateListView();
+                                if(sizeOfArray()>0){
+                                    for (Map.Entry<Integer, FindedUser> entry : addedUsersMap.entrySet()) {
+                                        FindedUser name = entry.getValue();
+                                        if(IntNormalIdWthDot == name.getId()){
+                                            goToConversation(name.getId(), name.getName(), conversationName);
+                                        }
+                                    }
+                                }
+                                InputMethodManager imm = (InputMethodManager) getSystemService(
+                                    Activity.INPUT_METHOD_SERVICE);
+                                imm.toggleSoftInput(InputMethodManager.HIDE_IMPLICIT_ONLY, 0);
+                            }else if (response.code() == 400) {
+                                Toast.makeText(SearchActivity.this,  response.message(), Toast.LENGTH_LONG).show();
                             }
                         }
-                    }
-                    InputMethodManager imm = (InputMethodManager) getSystemService(
-                        Activity.INPUT_METHOD_SERVICE);
-                    imm.toggleSoftInput(InputMethodManager.HIDE_IMPLICIT_ONLY, 0);
+                        @Override
+                        public void onFailure(Call<FindedConverName> call, Throwable t) {
+                            Toast.makeText(SearchActivity.this,  t.getMessage(), Toast.LENGTH_LONG).show();
+                        }
+                    });
                 }
             }
         });
@@ -183,8 +206,9 @@ public class SearchActivity extends AppCompatActivity {
                 int count=0;
                 for (Map.Entry<Integer, FindedUser> entry : helperMap.entrySet()) {
                     FindedUser name = entry.getValue();
+                    System.out.println("testttt "+name.getConversationName());
                     if(id == count){
-                        goToConversation(name.getId(), name.getName());
+                        goToConversation(name.getId(), name.getName(), name.getConversationName());
                     }
                     count++;
                 }
@@ -213,8 +237,8 @@ public class SearchActivity extends AppCompatActivity {
                         }
                         count1++;
                     }
-                    boolean test = deleteFromDb(itemToDelete); //send timestamp
-                    if(test) {
+                    boolean isItem = deleteFromDb(itemToDelete); //send timestamp
+                    if(isItem) {
                         helperMap.remove(itemToDelete);
                         updateListView();
                         MyAdapterHash addedUsersAdapter = new MyAdapterHash(helperMap);
@@ -325,23 +349,25 @@ public class SearchActivity extends AppCompatActivity {
         Cursor c = messengerDB.rawQuery("SELECT * FROM addedUsers", null);
         userIndex = c.getColumnIndex("userId");
         int nameIndex = c.getColumnIndex("name");
+        int converId = c.getColumnIndex("conversationName");
         int timeStamp = c.getColumnIndex("timestamp");
         addedUsersMap.clear();
         if (c.moveToFirst()) {
             do {
                 int intUserId = c.getInt(userIndex);
                 String nameUs = c.getString(nameIndex);
+                String strConversationName = c.getString(converId);
                 int intTimestamp = c.getInt(timeStamp);
                 int index = nameUs.indexOf(',');
                 String strNameAddedUser = nameUs.substring(index + 1);
-                addedUsersMap.put(intTimestamp, new FindedUser(intUserId, strNameAddedUser, intTimestamp));
+                addedUsersMap.put(intTimestamp, new FindedUser(intUserId, strNameAddedUser, strConversationName, intTimestamp));
             } while (c.moveToNext());
         }
         Map<Integer, FindedUser> reverseSortedMap = new TreeMap<>(Collections.reverseOrder());
         reverseSortedMap.putAll(addedUsersMap);
         for (Map.Entry<Integer, FindedUser> entry : reverseSortedMap.entrySet()) {
             FindedUser user = entry.getValue();
-            helperMap.put(entry.getKey(), new FindedUser(user.getId(), user.getName(), user.getTimestamp()));
+            helperMap.put(entry.getKey(), new FindedUser(user.getId(), user.getName(), user.getConversationName(), user.getTimestamp()));
         }
         MyAdapterHash addedUsersAdapter = new MyAdapterHash(helperMap);
         addedUsersListView.setAdapter(addedUsersAdapter);
@@ -380,10 +406,11 @@ public class SearchActivity extends AppCompatActivity {
         System.out.println("sizeOfArray: "+ aaa);
         return aaa;
     }
-    public void goToConversation(int userId, String userName){
+    public void goToConversation(int userId, String userName, String conversationName){
         Intent intent = new Intent(getApplicationContext(), ConversationActivity.class);
         intent.putExtra("userId", userId);
         intent.putExtra("name", userName);
+        intent.putExtra("conversationName", conversationName);
         startActivity(intent);
     }
 }

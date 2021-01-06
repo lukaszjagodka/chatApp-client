@@ -14,21 +14,25 @@ public class ConversationActivity extends AppCompatActivity {
 
         String name;
         int userId;
+        String convName;
         if (savedInstanceState == null) {
             Bundle extras = getIntent().getExtras();
             if(extras == null) {
                 userId = 0;
                 name = null;
+                convName = null;
             } else {
                 userId = extras.getInt("userId");
                 name = extras.getString("name");
+                convName = extras.getString("conversationName");
             }
         } else {
             userId = (Integer) savedInstanceState.getSerializable("userId");
             name = (String) savedInstanceState.getSerializable("name");
+            convName = (String) savedInstanceState.getSerializable("conversationName");
         }
         setTitle(name);
         TextView textView = findViewById(R.id.ccoz);
-        textView.setText(String.valueOf(userId));
+        textView.setText(convName);
     }
 }
