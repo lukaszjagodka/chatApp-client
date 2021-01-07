@@ -161,7 +161,6 @@ public class SearchActivity extends AppCompatActivity {
                             if (response.code() == 200) {
                                 FindedConverName result = response.body();
                                 assert result != null;
-                                System.out.println(result.getConversationName());
                                 conversationName = result.getConversationName();
 
                                 String sql = "INSERT INTO addedUsers (userId, name, conversationName, timestamp) VALUES (?,?,?,?)";
@@ -206,7 +205,6 @@ public class SearchActivity extends AppCompatActivity {
                 int count=0;
                 for (Map.Entry<Integer, FindedUser> entry : helperMap.entrySet()) {
                     FindedUser name = entry.getValue();
-                    System.out.println("testttt "+name.getConversationName());
                     if(id == count){
                         goToConversation(name.getId(), name.getName(), name.getConversationName());
                     }
@@ -333,11 +331,9 @@ public class SearchActivity extends AppCompatActivity {
         System.out.println("Delete table");
     }
     public boolean deleteFromDb(Integer itemToDelete){
-        System.out.println(itemToDelete);
         for (Map.Entry<Integer, FindedUser> entry : helperMap.entrySet()) {
             if(itemToDelete.equals(entry.getKey())){
                 String sql = "DELETE FROM addedUsers WHERE timestamp = "+itemToDelete;
-                System.out.println(sql);
                 SQLiteStatement statement = messengerDB.compileStatement(sql);
                 statement.execute();
                 return true;

@@ -14,4 +14,6 @@
     <string name="repeat_new_password">Repeat new password</string>
     <string name="search">Search</string>
     <string name="finded_users">Finded users:</string>
+    <string name="message">Message..</string>
+    <string name="send">Send</string>
 </resources>

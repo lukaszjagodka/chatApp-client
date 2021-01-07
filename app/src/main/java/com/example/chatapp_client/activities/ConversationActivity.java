@@ -32,7 +32,7 @@ public class ConversationActivity extends AppCompatActivity {
             convName = (String) savedInstanceState.getSerializable("conversationName");
         }
         setTitle(name);
-        TextView textView = findViewById(R.id.ccoz);
-        textView.setText(convName);
+//        TextView textView = findViewById(R.id.ccoz);
+//        textView.setText(convName);
     }
 }
