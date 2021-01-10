@@ -1,56 +1,137 @@
 package com.example.chatapp_client.activities;
 
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.util.Base64;
 import android.view.View;
 import android.widget.EditText;
-import android.widget.TextView;
+import android.widget.Toast;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import android.os.Bundle;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.chatapp_client.R;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.WebSocket;
+import com.example.chatapp_client.utils.MessageAdapter;
+import okhttp3.*;
+import org.json.JSONException;
+import org.json.JSONObject;
 
-public class ConversationActivity extends AppCompatActivity {
+import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+
+public class ConversationActivity extends AppCompatActivity implements TextWatcher {
     String name, convName;
     int userId;
     private WebSocket webSocket;
-    private String SERVER_PATH = "";
+    private String SERVER_PATH = "ws://echo.websocket.org";
     private EditText messageEdit;
     private View sendBtn, pickImgBtn;
     private RecyclerView recyclerView;
-
+    private int IMAGE_REQUEST_ID = 1;
+    private MessageAdapter messageAdapter;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_conversation);
+        Bundle extras = getIntent().getExtras();
 
+        userId = extras.getInt("userId");
+        name = extras.getString("name");
+        convName = extras.getString("conversationName");
 
-//        if (savedInstanceState == null) {
-            Bundle extras = getIntent().getExtras();
-//            if(extras == null) {
-//                userId = 0;
-//                name = null;
-//                convName = null;
-//            } else {
-                userId = extras.getInt("userId");
-                name = extras.getString("name");
-                convName = extras.getString("conversationName");
-//            }
-//        } else {
-//            userId = (Integer) savedInstanceState.getSerializable("userId");
-//            name = (String) savedInstanceState.getSerializable("name");
-//            convName = (String) savedInstanceState.getSerializable("conversationName");
-//        }
         setTitle(name);
-//        TextView textView = findViewById(R.id.ccoz);
-//        textView.setText(convName);
         initiateSocketConnection();
     }
 
     private void initiateSocketConnection() {
         OkHttpClient client = new OkHttpClient();
         Request request = new Request.Builder().url(SERVER_PATH).build();
-        webSocket = client.newWebSocket(request, )
+        webSocket = client.newWebSocket(request, new SocketListener());
+    }
+
+    @Override
+    public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+    @Override
+    public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+    @Override
+    public void afterTextChanged(Editable s) {
+        String string = s.toString().trim();
+        if(string.isEmpty()){
+            resetMessageEdit();
+        }else{
+            sendBtn.setVisibility(View.VISIBLE);
+            pickImgBtn.setVisibility(View.INVISIBLE);
+        }
+    }
+
+    private void resetMessageEdit() {
+        messageEdit.removeTextChangedListener(this);
+        messageEdit.setText("");
+        sendBtn.setVisibility(View.INVISIBLE);
+        pickImgBtn.setVisibility(View.VISIBLE);
+
+        messageEdit.addTextChangedListener(this);
+    }
+
+    private class SocketListener extends WebSocketListener {
+
+        @Override
+        public void onOpen(WebSocket webSocket, Response response) {
+            super.onOpen(webSocket, response);
+            runOnUiThread(()-> {
+                Toast.makeText(ConversationActivity.this, "Socket connected", Toast.LENGTH_SHORT).show();
+                initializeView();
+            });
+        }
+
+        @Override
+        public void onMessage(WebSocket webSocket, String text) {
+            super.onMessage(webSocket, text);
+            runOnUiThread(() -> {
+                try {
+                    JSONObject jsonObject = new JSONObject(text);
+                    jsonObject.put("isSent", false);
+                    messageAdapter.addItem(jsonObject);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            });
+        }
+    }
+
+    private void initializeView() {
+        messageEdit = findViewById(R.id.messageEdit);
+        sendBtn = findViewById(R.id.sendBtn);
+        pickImgBtn = findViewById(R.id.pickImgBtn);
+        recyclerView = findViewById(R.id.recyclerView);
+
+        messageAdapter = new MessageAdapter(getLayoutInflater());
+        recyclerView.setAdapter(messageAdapter);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        messageEdit.addTextChangedListener(this);
+
+        sendBtn.setOnClickListener(v -> {
+            JSONObject jsonObject = new JSONObject();
+            try {
+                jsonObject.put("name", name);
+                jsonObject.put("convName", convName);
+                jsonObject.put("message", messageEdit.getText().toString());
+
+                webSocket.send(jsonObject.toString());
+                jsonObject.put("isSent", true);
+                messageAdapter.addItem(jsonObject);
+                resetMessageEdit();
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        });
     }
 }
