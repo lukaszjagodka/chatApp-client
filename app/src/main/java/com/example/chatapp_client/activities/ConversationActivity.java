@@ -15,6 +15,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.chatapp_client.R;
+import com.example.chatapp_client.appPreferences.AppPreferences;
+import com.example.chatapp_client.utils.LoginResult;
 import com.example.chatapp_client.utils.MessageAdapter;
 import okhttp3.*;
 import org.json.JSONException;
@@ -25,10 +27,11 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 
 public class ConversationActivity extends AppCompatActivity implements TextWatcher {
-    String name, convName;
+    String myName, convName, name;
     int userId;
     private WebSocket webSocket;
-    private String SERVER_PATH = "ws://echo.websocket.org";
+//    private String SERVER_PATH = "ws://echo.websocket.org";
+    private String SERVER_PATH = "ws://192.168.100.3:3001";
     private EditText messageEdit;
     private View sendBtn, pickImgBtn;
     private RecyclerView recyclerView;
@@ -42,8 +45,8 @@ public class ConversationActivity extends AppCompatActivity implements TextWatch
 
         userId = extras.getInt("userId");
         name = extras.getString("name");
+        myName = extras.getString("myName");
         convName = extras.getString("conversationName");
-
         setTitle(name);
         initiateSocketConnection();
     }
@@ -114,6 +117,8 @@ public class ConversationActivity extends AppCompatActivity implements TextWatch
 
         messageAdapter = new MessageAdapter(getLayoutInflater());
         recyclerView.setAdapter(messageAdapter);
+        System.out.println("pozycja "+messageAdapter.getItemCount());
+        recyclerView.scrollToPosition(messageAdapter.getItemCount());
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         messageEdit.addTextChangedListener(this);
@@ -121,7 +126,7 @@ public class ConversationActivity extends AppCompatActivity implements TextWatch
         sendBtn.setOnClickListener(v -> {
             JSONObject jsonObject = new JSONObject();
             try {
-                jsonObject.put("name", name);
+                jsonObject.put("name", myName);
                 jsonObject.put("convName", convName);
                 jsonObject.put("message", messageEdit.getText().toString());
 
@@ -162,7 +167,7 @@ public class ConversationActivity extends AppCompatActivity implements TextWatch
         String base64String = Base64.encodeToString(outputStream.toByteArray(), Base64.DEFAULT);
         JSONObject jsonObject = new JSONObject();
         try {
-            jsonObject.put("name", name);
+            jsonObject.put("name", myName);
             jsonObject.put("convName", convName);
             jsonObject.put("image", base64String);
 
