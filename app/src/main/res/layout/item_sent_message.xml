@@ -6,8 +6,7 @@
     <TextView android:layout_width="wrap_content"
               android:layout_height="wrap_content"
               android:layout_alignParentStart="true"
-
-              android:layout_marginTop="8dp"
+              android:layout_marginTop="3dp"
               android:layout_marginBottom="4dp"
               android:layout_marginStart="30dp"
               android:layout_marginEnd="30dp"
@@ -18,13 +17,13 @@
               android:textSize="14sp"
               android:textColor="#3F51B5"
               android:textStyle="bold"
-              android:text="User"/>
+              android:text="myName"/>
 
     <TextView android:layout_width="wrap_content"
               android:layout_height="wrap_content"
               android:layout_alignParentStart="true"
 
-              android:layout_marginTop="25dp"
+              android:layout_marginTop="18dp"
               android:layout_marginBottom="4dp"
               android:layout_marginStart="30dp"
               android:layout_marginEnd="30dp"
@@ -33,5 +32,5 @@
               android:paddingEnd="5dp"
               android:id="@+id/sentTxt"
               android:textSize="14sp"
-              android:text="This is sample message"/>
+              android:text="message.."/>
 </RelativeLayout>

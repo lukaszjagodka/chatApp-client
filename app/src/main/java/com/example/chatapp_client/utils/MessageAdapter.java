@@ -32,20 +32,20 @@ public class MessageAdapter extends RecyclerView.Adapter {
   }
 
   private class SentMessageHolder extends RecyclerView.ViewHolder {
-    TextView messageTxt;
+    TextView messageTxt, sentName;
 
     public SentMessageHolder(@NonNull View itemView) {
       super(itemView);
-
+      sentName = itemView.findViewById(R.id.sentName);
       messageTxt = itemView.findViewById(R.id.sentTxt);
     }
   }
   private class SentImageHolder extends RecyclerView.ViewHolder {
     ImageView imageView;
-
+    TextView sentName;
     public SentImageHolder(@NonNull View itemView) {
       super(itemView);
-
+      sentName = itemView.findViewById(R.id.sentName);
       imageView = itemView.findViewById(R.id.imageView);
       imageView.setOnClickListener(v -> {
 //        Toast.makeText(v.getContext(), "clicked", Toast.LENGTH_SHORT).show();
@@ -57,8 +57,7 @@ public class MessageAdapter extends RecyclerView.Adapter {
 
     public ReceivedMessageHolder(@NonNull View itemView) {
       super(itemView);
-
-      nameTxt = itemView.findViewById(R.id.nameTxt);
+      nameTxt = itemView.findViewById(R.id.receivedName);
       messageTxt = itemView.findViewById(R.id.receivedTxt);
     }
   }
@@ -68,9 +67,8 @@ public class MessageAdapter extends RecyclerView.Adapter {
 
     public ReceivedImageHolder(@NonNull View itemView) {
       super(itemView);
-
+      nameTxt = itemView.findViewById(R.id.receivedName);
       imageView = itemView.findViewById(R.id.imageView);
-      nameTxt = itemView.findViewById(R.id.nameTxt);
     }
   }
 
@@ -121,42 +119,31 @@ public class MessageAdapter extends RecyclerView.Adapter {
   public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
 
     JSONObject message = messages.get(position);
-
+//    System.out.println(message);
     try {
       if (message.getBoolean("isSent")) {
-
         if (message.has("message")) {
-
           SentMessageHolder messageHolder = (SentMessageHolder) holder;
+          messageHolder.sentName.setText(message.getString("name"));
           messageHolder.messageTxt.setText(message.getString("message"));
-
         } else {
-
           SentImageHolder imageHolder = (SentImageHolder) holder;
+          imageHolder.sentName.setText(message.getString("name"));
           Bitmap bitmap = getBitmapFromString(message.getString("image"));
-
           imageHolder.imageView.setImageBitmap(bitmap);
-
         }
-
       } else {
-
         if (message.has("message")) {
-
           ReceivedMessageHolder messageHolder = (ReceivedMessageHolder) holder;
+          System.out.println(messageHolder);
           messageHolder.nameTxt.setText(message.getString("name"));
           messageHolder.messageTxt.setText(message.getString("message"));
-
         } else {
-
           ReceivedImageHolder imageHolder = (ReceivedImageHolder) holder;
-//          imageHolder.nameTxt.setText(message.getString("name"));
-
+          imageHolder.nameTxt.setText(message.getString("name"));
           Bitmap bitmap = getBitmapFromString(message.getString("image"));
           imageHolder.imageView.setImageBitmap(bitmap);
-
         }
-
       }
     } catch (JSONException e) {
       e.printStackTrace();
