@@ -56,11 +56,14 @@ public class SearchActivity extends AppCompatActivity {
         TextView findedUsersLabel = findViewById(R.id.findedUsersLabel);
         HashMap<String, String> searchDataMap = new HashMap<>();
 
+        String tableUserName = _appPrefs.getEmail();
+        String tableName = "addedUsers"+tableUserName.substring(0,tableUserName.indexOf("@"));
+
         messengerDB = this.openOrCreateDatabase("CommisionaireDB", MODE_PRIVATE, null);
-        messengerDB.execSQL("CREATE TABLE IF NOT EXISTS addedUsers (id INTEGER PRIMARY KEY, userId INTEGER, name VARCHAR, conversationName VARCHAR, timestamp INTEGER)");
+        messengerDB.execSQL("CREATE TABLE IF NOT EXISTS "+tableName+" (id INTEGER PRIMARY KEY, userId INTEGER, name VARCHAR, conversationName VARCHAR, timestamp INTEGER)");
 
 //        deleteTable();
-        updateListView();
+        updateListView(tableName);
 
         // seach user in base
         searchText.addTextChangedListener(new TextWatcher() {
@@ -128,7 +131,7 @@ public class SearchActivity extends AppCompatActivity {
                 String nameAddedUser = itemString.substring(index+1);
                 Date date = new Date();
                 System.out.println(new Timestamp(date.getTime()));
-                boolean mm = isUserExistInDb(IntNormalIdWthDot);
+                boolean mm = isUserExistInDb(IntNormalIdWthDot, tableName);
                 if(mm){
                     contactListView.setVisibility(View.GONE);
                     searchText.setText("");
@@ -139,8 +142,8 @@ public class SearchActivity extends AppCompatActivity {
                     addedUsersListView.setAdapter(addedUsersAdapter);
                     addedUsersAdapter.notifyDataSetChanged();
 
-                    updateListView();
-                    if(sizeOfArray()>0){
+                    updateListView(tableName);
+                    if(sizeOfArray(tableName)>0){
                         for (Map.Entry<Integer, FindedUser> entry : addedUsersMap.entrySet()) {
                             FindedUser name = entry.getValue();
                             if(IntNormalIdWthDot == name.getId()){
@@ -163,7 +166,7 @@ public class SearchActivity extends AppCompatActivity {
                                 assert result != null;
                                 conversationName = result.getConversationName();
 
-                                String sql = "INSERT INTO addedUsers (userId, name, conversationName, timestamp) VALUES (?,?,?,?)";
+                                String sql = "INSERT INTO "+tableName+" (userId, name, conversationName, timestamp) VALUES (?,?,?,?)";
                                 SQLiteStatement statement = messengerDB.compileStatement(sql);
                                 statement.bindString(1, StrNormalIdWthDot);
                                 statement.bindString(2, nameAddedUser);
@@ -175,8 +178,8 @@ public class SearchActivity extends AppCompatActivity {
                                 searchText.setText("");
                                 addedUsersListView.setVisibility(View.VISIBLE);
                                 findedUsersLabel.setVisibility(View.INVISIBLE);
-                                updateListView();
-                                if(sizeOfArray()>0){
+                                updateListView(tableName);
+                                if(sizeOfArray(tableName)>0){
                                     for (Map.Entry<Integer, FindedUser> entry : addedUsersMap.entrySet()) {
                                         FindedUser name = entry.getValue();
                                         if(IntNormalIdWthDot == name.getId()){
@@ -201,7 +204,7 @@ public class SearchActivity extends AppCompatActivity {
         });
         // go to conversation
         addedUsersListView.setOnItemClickListener((parent, view, position, id) -> {
-            if(sizeOfArray()>0){
+            if(sizeOfArray(tableName)>0){
                 int count=0;
                 for (Map.Entry<Integer, FindedUser> entry : helperMap.entrySet()) {
                     FindedUser name = entry.getValue();
@@ -235,10 +238,10 @@ public class SearchActivity extends AppCompatActivity {
                         }
                         count1++;
                     }
-                    boolean isItem = deleteFromDb(itemToDelete); //send timestamp
+                    boolean isItem = deleteFromDb(itemToDelete, tableName); //send timestamp
                     if(isItem) {
                         helperMap.remove(itemToDelete);
-                        updateListView();
+                        updateListView(tableName);
                         MyAdapterHash addedUsersAdapter = new MyAdapterHash(helperMap);
                         addedUsersListView.setAdapter(addedUsersAdapter);
                         addedUsersAdapter.notifyDataSetChanged();
@@ -325,15 +328,15 @@ public class SearchActivity extends AppCompatActivity {
         Intent intent = new Intent(getApplicationContext(), SignupActivity.class);
         startActivity(intent);
         }
-    public void deleteTable(){
-        messengerDB.execSQL("DELETE FROM addedUsers");
-//        messengerDB.execSQL("DROP TABLE addedUsers");
+    public void deleteTable(String tableName){
+        messengerDB.execSQL("DELETE FROM "+tableName+"");
+//        messengerDB.execSQL("DROP TABLE "+tableName+"");
         System.out.println("Delete table");
     }
-    public boolean deleteFromDb(Integer itemToDelete){
+    public boolean deleteFromDb(Integer itemToDelete, String tableName){
         for (Map.Entry<Integer, FindedUser> entry : helperMap.entrySet()) {
             if(itemToDelete.equals(entry.getKey())){
-                String sql = "DELETE FROM addedUsers WHERE timestamp = "+itemToDelete;
+                String sql = "DELETE FROM "+tableName+" WHERE timestamp = "+itemToDelete;
                 SQLiteStatement statement = messengerDB.compileStatement(sql);
                 statement.execute();
                 return true;
@@ -341,8 +344,8 @@ public class SearchActivity extends AppCompatActivity {
         }
         return false;
     }
-    public void updateListView() {
-        Cursor c = messengerDB.rawQuery("SELECT * FROM addedUsers", null);
+    public void updateListView(String tableName) {
+        Cursor c = messengerDB.rawQuery("SELECT * FROM "+tableName+"", null);
         userIndex = c.getColumnIndex("userId");
         int nameIndex = c.getColumnIndex("name");
         int converId = c.getColumnIndex("conversationName");
@@ -369,19 +372,19 @@ public class SearchActivity extends AppCompatActivity {
         addedUsersListView.setAdapter(addedUsersAdapter);
         addedUsersAdapter.notifyDataSetChanged();
     }
-    public boolean isUserExistInDb(int userIdFromDb){
+    public boolean isUserExistInDb(int userIdFromDb, String tableName){
         System.out.println(userIdFromDb);
         if(addedUsersMap.size() == 0) {
             return false;
         }else{
-            Cursor c = messengerDB.rawQuery("SELECT * FROM addedUsers", null);
+            Cursor c = messengerDB.rawQuery("SELECT * FROM "+tableName+"", null);
             userIndex = c.getColumnIndex("userId");
             if (c.moveToFirst()) {
                 do {
                     int intUserId = c.getInt(userIndex);
                     if (intUserId == userIdFromDb) {
                         int tsLong = (int) (System.currentTimeMillis()/1000);
-                        String sql = "UPDATE addedUsers SET timestamp = "+tsLong+" WHERE userId = "+userIdFromDb;
+                        String sql = "UPDATE "+tableName+" SET timestamp = "+tsLong+" WHERE userId = "+userIdFromDb;
                         SQLiteStatement statement = messengerDB.compileStatement(sql);
                         statement.execute();
                         return true;
@@ -391,9 +394,9 @@ public class SearchActivity extends AppCompatActivity {
         }
         return false;
     }
-    public int sizeOfArray() {
+    public int sizeOfArray(String tableName) {
         int aaa=0;
-        Cursor c = messengerDB.rawQuery("SELECT * FROM addedUsers", null);
+        Cursor c = messengerDB.rawQuery("SELECT * FROM "+tableName+"", null);
         if (c.moveToFirst()) {
             do {
                 aaa++;
@@ -402,10 +405,12 @@ public class SearchActivity extends AppCompatActivity {
         System.out.println("sizeOfArray: "+ aaa);
         return aaa;
     }
-    public void goToConversation(int userId, String userName, String conversationName){
+    public void goToConversation(int userId, String recipient, String conversationName){
+        String myName = _appPrefs.getName();
         Intent intent = new Intent(getApplicationContext(), ConversationActivity.class);
         intent.putExtra("userId", userId);
-        intent.putExtra("name", userName);
+        intent.putExtra("name", recipient);
+        intent.putExtra("myName", myName);
         intent.putExtra("conversationName", conversationName);
         startActivity(intent);
     }
