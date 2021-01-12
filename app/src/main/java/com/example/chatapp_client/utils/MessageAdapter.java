@@ -153,7 +153,7 @@ public class MessageAdapter extends RecyclerView.Adapter {
   private Bitmap getBitmapFromString(String image) {
     byte[] bytes = Base64.decode(image, Base64.DEFAULT);
     return Bitmap.createScaledBitmap(BitmapFactory.decodeByteArray(bytes, 0, bytes.length),
-        600, 600, true);
+        700, 700, true);
   }
 
   @Override

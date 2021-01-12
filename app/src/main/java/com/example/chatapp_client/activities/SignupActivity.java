@@ -53,6 +53,7 @@ public class SignupActivity extends AppCompatActivity {
             _appPrefs.saveIsToken(false);
             _appPrefs.saveToken("");
             _appPrefs.saveEmail("");
+            _appPrefs.saveName("");
         }
 
         findViewById(R.id.login).setOnClickListener(view -> handleLoginDialog());
@@ -141,7 +142,7 @@ public class SignupActivity extends AppCompatActivity {
 
                                 _appPrefs.saveToken(String.valueOf(jwt));
                                 _appPrefs.saveIsToken(true);
-                                _appPrefs.saveName(result.getName());
+                                _appPrefs.saveName(name.asString());
                                 _appPrefs.saveEmail(result.getEmail());
                                 _appPrefs.saveRemember(rememberBox.isChecked());
 

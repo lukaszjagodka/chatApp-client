@@ -62,7 +62,7 @@ public class SearchActivity extends AppCompatActivity {
         messengerDB = this.openOrCreateDatabase("CommisionaireDB", MODE_PRIVATE, null);
         messengerDB.execSQL("CREATE TABLE IF NOT EXISTS "+tableName+" (id INTEGER PRIMARY KEY, userId INTEGER, name VARCHAR, conversationName VARCHAR, timestamp INTEGER)");
 
-//        deleteTable();
+//        deleteTable(tableName);
         updateListView(tableName);
 
         // seach user in base
@@ -114,6 +114,12 @@ public class SearchActivity extends AppCompatActivity {
                 contactListView.setVisibility(View.VISIBLE);
                 addedUsersListView.setVisibility(View.INVISIBLE);
                 findedUsersLabel.setVisibility(View.VISIBLE);
+
+                if(s.length()==0){
+                    contactListView.setVisibility(View.GONE);
+                    findedUsersLabel.setVisibility(View.INVISIBLE);
+                    addedUsersListView.setVisibility(View.VISIBLE);
+                }
             }
         });
         // chose and add user to addedUser list

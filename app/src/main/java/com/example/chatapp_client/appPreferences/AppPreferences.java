@@ -43,7 +43,7 @@ public class AppPreferences {
     return _sharedPrefs.getString(KEY_PREFS_NAME, "");
   }
 
-  public void saveName(String name) { //?
+  public void saveName(String name) {
     _prefsEditor.putString(KEY_PREFS_NAME, name);
     _prefsEditor.commit();
   }
@@ -52,7 +52,7 @@ public class AppPreferences {
     return _sharedPrefs.getString(KEY_PREFS_EMAIL, "");
   }
 
-  public void saveEmail(String email) { //?
+  public void saveEmail(String email) {
     _prefsEditor.putString(KEY_PREFS_EMAIL, email);
     _prefsEditor.commit();
   }
