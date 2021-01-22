@@ -10,13 +10,13 @@ import android.util.Base64;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.chatapp_client.R;
 import com.example.chatapp_client.appPreferences.AppPreferences;
-import com.example.chatapp_client.utils.LoginResult;
 import com.example.chatapp_client.utils.MessageAdapter;
 import okhttp3.*;
 import org.json.JSONException;
@@ -25,44 +25,51 @@ import org.json.JSONObject;
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.util.TimerTask;
 
 public class ConversationActivity extends AppCompatActivity implements TextWatcher {
+    public AppPreferences _appPrefs;
     String myName, convName, name;
     int userId;
     private WebSocket webSocket;
-//    private String SERVER_PATH = "ws://echo.websocket.org";
-    private String SERVER_PATH = "ws://192.168.100.3:3001";
     private EditText messageEdit;
     private View sendBtn, pickImgBtn;
-    private RecyclerView recyclerView;
-    private int IMAGE_REQUEST_ID = 1;
+    private final int IMAGE_REQUEST_ID = 1;
     private MessageAdapter messageAdapter;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_conversation);
         Bundle extras = getIntent().getExtras();
+        _appPrefs = new AppPreferences(getApplicationContext());
 
         userId = extras.getInt("userId");
         name = extras.getString("name");
         myName = extras.getString("myName");
         convName = extras.getString("conversationName");
         setTitle(name);
-        initiateSocketConnection();
+
+        if (!_appPrefs.getSocketConn()){
+            initiateSocketConnection();
+        }
     }
 
-    private void initiateSocketConnection() {
-        OkHttpClient client = new OkHttpClient();
-        Request request = new Request.Builder().url(SERVER_PATH).build();
-        webSocket = client.newWebSocket(request, new SocketListener());
+    public Runnable initiateSocketConnection() {
+        if(!_appPrefs.getSocketConn()) {
+            OkHttpClient client = new OkHttpClient();
+            String SERVER_PATH = "ws://192.168.100.3:3001";
+            Request request = new Request.Builder().url(SERVER_PATH).build();
+            webSocket = client.newWebSocket(request, new SocketListener());
+            _appPrefs.saveSocketConn(true);
+        }
+        return null;
     }
 
     @Override
     public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
     @Override
     public void onTextChanged(CharSequence s, int start, int before, int count) {}
-
     @Override
     public void afterTextChanged(Editable s) {
         String string = s.toString().trim();
@@ -79,33 +86,77 @@ public class ConversationActivity extends AppCompatActivity implements TextWatch
         messageEdit.setText("");
         sendBtn.setVisibility(View.INVISIBLE);
         pickImgBtn.setVisibility(View.VISIBLE);
-
         messageEdit.addTextChangedListener(this);
     }
 
-    private class SocketListener extends WebSocketListener {
-
+    public class SocketListener extends WebSocketListener {
         @Override
-        public void onOpen(WebSocket webSocket, Response response) {
+        public void onOpen(@NonNull WebSocket webSocket, @NonNull Response response) {
+            System.out.println(response);
             super.onOpen(webSocket, response);
             runOnUiThread(()-> {
                 Toast.makeText(ConversationActivity.this, "Socket connected", Toast.LENGTH_SHORT).show();
                 initializeView();
+
+                setTimeout(ConversationActivity.this::ping, 30000);
             });
         }
-
         @Override
-        public void onMessage(WebSocket webSocket, String text) {
+        public void onMessage(@NonNull WebSocket webSocket, @NonNull String text) {
             super.onMessage(webSocket, text);
             runOnUiThread(() -> {
                 try {
                     JSONObject jsonObject = new JSONObject(text);
                     jsonObject.put("isSent", false);
-                    messageAdapter.addItem(jsonObject);
+                    String userType = jsonObject.getString("type");
+                    switch (userType) {
+                        case "userping":
+                            _appPrefs.saveSocketConn(true);
+                            break;
+                        case "userevent":
+                            System.out.println("message " + text);
+                            messageAdapter.addItem(jsonObject);
+                            break;
+                    }
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
             });
+        }
+        @Override
+        public void onClosing(@NonNull WebSocket webSocket, int code, @NonNull String reason) {
+            super.onClosing(webSocket, code, reason);
+            runOnUiThread(() -> {
+                JSONObject jsonObject = new JSONObject();
+                try {
+                    jsonObject.put("type", "closing");
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+                webSocket.send(jsonObject.toString());
+                System.out.println("onClosing "+webSocket +" "+code+" "+reason);
+            });
+        }
+        @Override
+        public void onClosed(@NonNull WebSocket webSocket, int code, @NonNull String reason) {
+            super.onClosed(webSocket, code, reason);
+            runOnUiThread(() -> {
+                JSONObject jsonObject = new JSONObject();
+                try {
+                    jsonObject.put("type", "closed");
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+                webSocket.send(jsonObject.toString());
+                System.out.println("onClosed "+webSocket +" "+code+" "+reason);
+            });
+        }
+        @Override
+        public void onFailure(@NonNull WebSocket webSocket, @NonNull Throwable t, Response response) {
+            super.onFailure(webSocket, t, response);
+//            System.out.println("onFailure "+webSocket+" "+t+" "+response);
+            _appPrefs.saveSocketConn(false);
+            setTimeout(initiateSocketConnection(),1000);
         }
     }
 
@@ -113,12 +164,12 @@ public class ConversationActivity extends AppCompatActivity implements TextWatch
         messageEdit = findViewById(R.id.messageEdit);
         sendBtn = findViewById(R.id.sendBtn);
         pickImgBtn = findViewById(R.id.pickImgBtn);
-        recyclerView = findViewById(R.id.recyclerView);
+        RecyclerView recyclerView = findViewById(R.id.recyclerView);
 
         messageAdapter = new MessageAdapter(getLayoutInflater());
         recyclerView.setAdapter(messageAdapter);
-        System.out.println("pozycja "+messageAdapter.getItemCount());
-        recyclerView.scrollToPosition(messageAdapter.getItemCount());
+//        System.out.println("position "+messageAdapter.getItemCount());
+//        recyclerView.scrollToPosition(messageAdapter.getItemCount());
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         messageEdit.addTextChangedListener(this);
@@ -126,6 +177,7 @@ public class ConversationActivity extends AppCompatActivity implements TextWatch
         sendBtn.setOnClickListener(v -> {
             JSONObject jsonObject = new JSONObject();
             try {
+                jsonObject.put("type", "userevent");
                 jsonObject.put("name", myName);
                 jsonObject.put("convName", convName);
                 jsonObject.put("message", messageEdit.getText().toString());
@@ -150,6 +202,7 @@ public class ConversationActivity extends AppCompatActivity implements TextWatch
         super.onActivityResult(requestCode, resultCode, data);
         if(requestCode == IMAGE_REQUEST_ID && resultCode == RESULT_OK){
             try {
+                assert data != null;
                 InputStream is = getContentResolver().openInputStream(data.getData());
                 Bitmap image = BitmapFactory.decodeStream(is);
 
@@ -167,6 +220,7 @@ public class ConversationActivity extends AppCompatActivity implements TextWatch
         String base64String = Base64.encodeToString(outputStream.toByteArray(), Base64.DEFAULT);
         JSONObject jsonObject = new JSONObject();
         try {
+            jsonObject.put("type", "userevent");
             jsonObject.put("name", myName);
             jsonObject.put("convName", convName);
             jsonObject.put("image", base64String);
@@ -178,5 +232,51 @@ public class ConversationActivity extends AppCompatActivity implements TextWatch
         } catch (JSONException e) {
             e.printStackTrace();
         }
+    }
+    public static void setTimeout(Runnable runnable, int delay){
+        new Thread(() -> {
+            try {
+                Thread.sleep(delay);
+                runnable.run();
+            }
+            catch (Exception e){
+                e.printStackTrace();
+            }
+        }).start();
+    }
+    public TimerTask ping(){
+        runOnUiThread(()-> {
+            JSONObject jsonObject = new JSONObject();
+            try {
+                jsonObject.put("type", "userping");
+                webSocket.send(jsonObject.toString());
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        });
+        setTimeout(ConversationActivity.this::ping, 30000);
+        return null;
+    }
+
+    @Override
+    public void onBackPressed(){
+        super.onBackPressed();
+//        System.out.println("onBackPressed");
+        webSocket.close(1000, "closed connection");
+        _appPrefs.saveSocketConn(false);
+    }
+    protected void onPause() {
+        super.onPause();
+//        System.out.println("onPause");
+    }
+    protected void onStop() {
+        super.onStop();
+//        System.out.println("onStop");
+    }
+    public void onDestroy(){
+        super.onDestroy();
+//        System.out.println("onDestroy");
+        webSocket.close(1000, "closed connection");
+        _appPrefs.saveSocketConn(false);
     }
 }
