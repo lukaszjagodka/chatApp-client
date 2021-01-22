@@ -1,12 +1,14 @@
 package com.example.chatapp_client.utils;
 
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.content.Context;
 import android.util.Patterns;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -15,7 +17,6 @@ public class Helpers {
   public Helpers(Context context) {
     this.context = context;
   }
-
   public void closeKeyboard(Activity activity) {
     InputMethodManager imm = (InputMethodManager) context
         .getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -48,5 +49,18 @@ public class Helpers {
     }else{
       return false;
     }
+  }
+  public static boolean isAppRunning(final Context context, final String packageName) {
+    final ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+    final List<ActivityManager.RunningAppProcessInfo> procInfos = activityManager.getRunningAppProcesses();
+    if (procInfos != null)
+    {
+      for (final ActivityManager.RunningAppProcessInfo processInfo : procInfos) {
+        if (processInfo.processName.equals(packageName)) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 }
