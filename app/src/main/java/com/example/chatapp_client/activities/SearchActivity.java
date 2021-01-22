@@ -28,7 +28,6 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-import java.sql.Timestamp;
 import java.util.*;
 
 public class SearchActivity extends AppCompatActivity {
@@ -136,7 +135,7 @@ public class SearchActivity extends AppCompatActivity {
 
                 String nameAddedUser = itemString.substring(index+1);
                 Date date = new Date();
-                System.out.println(new Timestamp(date.getTime()));
+//                System.out.println(new Timestamp(date.getTime()));
                 boolean mm = isUserExistInDb(IntNormalIdWthDot, tableName);
                 if(mm){
                     contactListView.setVisibility(View.GONE);
@@ -256,6 +255,17 @@ public class SearchActivity extends AppCompatActivity {
                 .show();
             return true;
         });
+    }
+    @Override
+    public void onBackPressed(){
+        super.onBackPressed();
+//        Intent splashActivity = new Intent(getApplicationContext(), MainActivity.class);
+//        startActivity(splashActivity);
+        Intent a = new Intent(Intent.ACTION_MAIN);
+        a.addCategory(Intent.CATEGORY_HOME);
+        a.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(a);
+        finish();
     }
 
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -408,7 +418,6 @@ public class SearchActivity extends AppCompatActivity {
                 aaa++;
             } while (c.moveToNext());
         }
-        System.out.println("sizeOfArray: "+ aaa);
         return aaa;
     }
     public void goToConversation(int userId, String recipient, String conversationName){
