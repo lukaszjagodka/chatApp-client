@@ -26,14 +26,11 @@ public class MainActivity extends AppCompatActivity {
         if(ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},10);
 
-        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                Intent splashActivity = new Intent(getApplicationContext(), SignupActivity.class);
-                startActivity(splashActivity);
-                if (Helpers.isAppRunning(MainActivity.this, "com.example.chatapp_client")) {
-                    _appPrefs.saveSocketConn(false);
-                }
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            Intent splashActivity = new Intent(getApplicationContext(), SignupActivity.class);
+            startActivity(splashActivity);
+            if (Helpers.isAppRunning(MainActivity.this, "com.example.chatapp_client")) {
+                _appPrefs.saveSocketConn(false);
             }
         }, 3000);
     }

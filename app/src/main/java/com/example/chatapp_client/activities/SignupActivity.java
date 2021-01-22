@@ -2,30 +2,25 @@ package com.example.chatapp_client.activities;
 
 import android.content.Context;
 import android.content.Intent;
-import android.util.Patterns;
+import android.os.Bundle;
 import android.view.View;
 import android.widget.*;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import android.os.Bundle;
 import com.auth0.android.jwt.Claim;
 import com.auth0.android.jwt.JWT;
 import com.example.chatapp_client.R;
 import com.example.chatapp_client.appPreferences.AppPreferences;
 import com.example.chatapp_client.retrofit.RetrofitClient;
-import com.example.chatapp_client.retrofit.RetrofitInterface;
-import com.example.chatapp_client.utils.LoginResult;
 import com.example.chatapp_client.utils.Helpers;
+import com.example.chatapp_client.utils.LoginResult;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
 
 import java.util.HashMap;
 import java.util.Objects;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class SignupActivity extends AppCompatActivity {
 
@@ -81,7 +76,7 @@ public class SignupActivity extends AppCompatActivity {
                 map.put("password", passwordEdit.getText().toString());
                 client.getServie().executeSignup(map).enqueue(new Callback<Void>() {
                     @Override
-                    public void onResponse(Call<Void> call, Response<Void> response) {
+                    public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
                         if (response.code() == 200) {
                             Toast.makeText(SignupActivity.this,
                                 "Signed up successfully. Check your email and confirm account!", Toast.LENGTH_LONG).show();
@@ -97,7 +92,7 @@ public class SignupActivity extends AppCompatActivity {
                     }
 
                     @Override
-                    public void onFailure(Call<Void> call, Throwable t) {
+                    public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
                         Toast.makeText(SignupActivity.this, t.getMessage(),
                             Toast.LENGTH_LONG).show();
                     }
@@ -128,9 +123,10 @@ public class SignupActivity extends AppCompatActivity {
 
                     client.getServie().executeLogin(map).enqueue(new Callback<LoginResult>() {
                         @Override
-                        public void onResponse(Call<LoginResult> call, Response<LoginResult> response) {
+                        public void onResponse(@NonNull Call<LoginResult> call, @NonNull Response<LoginResult> response) {
                             if (response.code() == 200) {
                                 LoginResult result = response.body();
+                                assert result != null;
                                 String token = result.getJwtToken();
                                 result.setToken(token);
                                 JWT jwt = new JWT(token);
@@ -165,7 +161,7 @@ public class SignupActivity extends AppCompatActivity {
                                         map1.put("email", emailEdit.getText().toString());
                                         client.getServie().executeRememberPassword(map1).enqueue(new Callback<Void>() {
                                             @Override
-                                            public void onResponse(Call<Void> call, Response<Void> response) {
+                                            public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
                                                 if (response.isSuccessful()) {
                                                     if (response.code() == 200) {
                                                         Toast.makeText(SignupActivity.this,
@@ -181,7 +177,7 @@ public class SignupActivity extends AppCompatActivity {
                                                 }
                                             }
                                             @Override
-                                            public void onFailure(Call<Void> call, Throwable t) {
+                                            public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
                                                 Toast.makeText(SignupActivity.this, t.getMessage(),
                                                     Toast.LENGTH_LONG).show();
                                             }
@@ -191,7 +187,7 @@ public class SignupActivity extends AppCompatActivity {
                             }
                         }
                         @Override
-                        public void onFailure(Call<LoginResult> call, Throwable t) {
+                        public void onFailure(@NonNull Call<LoginResult> call, @NonNull Throwable t) {
                             Toast.makeText(SignupActivity.this, t.getMessage(),
                                 Toast.LENGTH_LONG).show();
                         }

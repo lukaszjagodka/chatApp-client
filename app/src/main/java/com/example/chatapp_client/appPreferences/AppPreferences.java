@@ -11,6 +11,7 @@ public class AppPreferences {
   public static final String KEY_PREFS_NAME= "name";
   public static final String KEY_PREFS_EMAIL= "email";
   public static final String KEY_PREFS_REMEMBER= "remember";
+  public static final String KEY_PREFS_SOCKET_CONN= "socketConn";
   private static final String APP_SHARED_PREFS = AppPreferences.class.getName();
   private final SharedPreferences _sharedPrefs;
   private final SharedPreferences.Editor _prefsEditor;
@@ -63,6 +64,15 @@ public class AppPreferences {
 
   public void saveRemember(Boolean remember) {
     _prefsEditor.putBoolean(KEY_PREFS_REMEMBER, remember);
+    _prefsEditor.commit();
+  }
+
+  public boolean getSocketConn() {
+    return _sharedPrefs.getBoolean(KEY_PREFS_SOCKET_CONN, false);
+  }
+
+  public void saveSocketConn(Boolean socketConn) {
+    _prefsEditor.putBoolean(KEY_PREFS_SOCKET_CONN, socketConn);
     _prefsEditor.commit();
   }
 }

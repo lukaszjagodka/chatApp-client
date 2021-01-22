@@ -13,7 +13,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Helpers {
-  private Context context;
+  private final Context context;
   public Helpers(Context context) {
     this.context = context;
   }

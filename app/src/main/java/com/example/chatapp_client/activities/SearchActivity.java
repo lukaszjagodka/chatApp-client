@@ -14,6 +14,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.*;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
@@ -74,7 +75,7 @@ public class SearchActivity extends AppCompatActivity {
                 searchDataMap.put("more", "1");
                 client.getServie().executeSearchUser(searchDataMap).enqueue(new Callback<SearchResult>() {
                     @Override
-                    public void onResponse(Call<SearchResult> call, Response<SearchResult> response) {
+                    public void onResponse(@NonNull  Call<SearchResult> call, @NonNull Response<SearchResult> response) {
                         if (response.code() == 200) {
                             SearchResult searchResult = response.body();
                             assert searchResult != null;
@@ -99,7 +100,7 @@ public class SearchActivity extends AppCompatActivity {
                         }
                     }
                     @Override
-                    public void onFailure(Call<SearchResult> call, Throwable t) {
+                    public void onFailure(@NonNull Call<SearchResult> call, @NonNull Throwable t) {
                         Toast.makeText(SearchActivity.this, t.getMessage(), Toast.LENGTH_LONG).show();
                     }
                 });
@@ -134,7 +135,7 @@ public class SearchActivity extends AppCompatActivity {
                 int IntNormalIdWthDot = Integer.parseInt(StrNormalIdWthDot);
 
                 String nameAddedUser = itemString.substring(index+1);
-                Date date = new Date();
+//                Date date = new Date();
 //                System.out.println(new Timestamp(date.getTime()));
                 boolean mm = isUserExistInDb(IntNormalIdWthDot, tableName);
                 if(mm){
@@ -165,7 +166,7 @@ public class SearchActivity extends AppCompatActivity {
                     map.put("recipient", StrNormalIdWthDot);
                     client.getServie().executeFindConvName(map).enqueue(new Callback<FindedConverName>() {
                         @Override
-                        public void onResponse(Call<FindedConverName> call, Response<FindedConverName> response) {
+                        public void onResponse(@NonNull Call<FindedConverName> call, @NonNull Response<FindedConverName> response) {
                             if (response.code() == 200) {
                                 FindedConverName result = response.body();
                                 assert result != null;
@@ -200,7 +201,7 @@ public class SearchActivity extends AppCompatActivity {
                             }
                         }
                         @Override
-                        public void onFailure(Call<FindedConverName> call, Throwable t) {
+                        public void onFailure(@NonNull Call<FindedConverName> call, @NonNull Throwable t) {
                             Toast.makeText(SearchActivity.this,  t.getMessage(), Toast.LENGTH_LONG).show();
                         }
                     });
@@ -259,15 +260,12 @@ public class SearchActivity extends AppCompatActivity {
     @Override
     public void onBackPressed(){
         super.onBackPressed();
-//        Intent splashActivity = new Intent(getApplicationContext(), MainActivity.class);
-//        startActivity(splashActivity);
         Intent a = new Intent(Intent.ACTION_MAIN);
         a.addCategory(Intent.CATEGORY_HOME);
         a.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(a);
         finish();
     }
-
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
@@ -310,7 +308,7 @@ public class SearchActivity extends AppCompatActivity {
 
                         client.getServie().executePasswordChange(authToken, map).enqueue(new Callback<Void>() {
                             @Override
-                            public void onResponse(Call<Void> call, Response<Void> response) {
+                            public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
                                 if(response.code() == 200){
                                     Toast.makeText(SearchActivity.this, response.message(), Toast.LENGTH_SHORT).show();
                                     logout();
@@ -319,7 +317,7 @@ public class SearchActivity extends AppCompatActivity {
                                 }
                             }
                             @Override
-                            public void onFailure(Call<Void> call, Throwable t) {
+                            public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
                                 Toast.makeText(SearchActivity.this, t.getMessage(), Toast.LENGTH_SHORT).show();
                             }
                         });
