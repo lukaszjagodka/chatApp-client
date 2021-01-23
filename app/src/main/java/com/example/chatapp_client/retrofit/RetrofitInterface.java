@@ -1,9 +1,6 @@
 package com.example.chatapp_client.retrofit;
 
-import com.example.chatapp_client.utils.FindedConverName;
-import com.example.chatapp_client.utils.FindedUser;
-import com.example.chatapp_client.utils.LoginResult;
-import com.example.chatapp_client.utils.SearchResult;
+import com.example.chatapp_client.utils.*;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.Header;
@@ -31,4 +28,8 @@ public interface RetrofitInterface {
 
   @POST("/searchconversation")
   Call<FindedConverName> executeFindConvName(@Body HashMap<String, String> map);
+
+  @Headers({ "Content-Type: application/json;charset=UTF-8"})
+  @POST("/checkcontacts")
+  Call<CheckContacts> executeCheckContacts(@Header("Authorization") String authToken, @Body HashMap<String, String> map);
 }
