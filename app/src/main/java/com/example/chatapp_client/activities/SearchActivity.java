@@ -62,8 +62,32 @@ public class SearchActivity extends AppCompatActivity {
         messengerDB = this.openOrCreateDatabase("CommisionaireDB", MODE_PRIVATE, null);
         messengerDB.execSQL("CREATE TABLE IF NOT EXISTS "+tableName+" (id INTEGER PRIMARY KEY, userId INTEGER, name VARCHAR, conversationName VARCHAR, timestamp INTEGER)");
 
+        //new login on mobile
+        if(!isTableExists(tableName)){
+            String jwt = _appPrefs.getToken();
+            HashMap<String, String> mapCheckContact = new HashMap<>();
+            mapCheckContact.put("email", tableUserName);
+            String authToken = "Bearer "+ jwt;
+            client.getServie().executeCheckContacts(authToken, mapCheckContact).enqueue(new Callback<CheckContacts>() {
+                @Override
+                public void onResponse(@NonNull Call<CheckContacts> call, @NonNull Response<CheckContacts> response) {
+                    if(response.code() == 200){
+                        CheckContacts checkContacts = response.body();
+                        assert checkContacts != null;
+                        if(checkContacts.getFindedUsers().size() == 0){
+                            updateListView(tableName);
+                        }else{
+                            Toast.makeText(SearchActivity.this, response.message(), Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                }
+                @Override
+                public void onFailure(@NonNull Call<CheckContacts> call, @NonNull Throwable t) {}
+            });
+        }else{
 //        deleteTable(tableName);
-        updateListView(tableName);
+            updateListView(tableName);
+        }
 
         // seach user in base
         searchText.addTextChangedListener(new TextWatcher() {
@@ -426,5 +450,20 @@ public class SearchActivity extends AppCompatActivity {
         intent.putExtra("myName", myName);
         intent.putExtra("conversationName", conversationName);
         startActivity(intent);
+    }
+    public boolean isTableExists(String tableName) {
+        Cursor c = null;
+        boolean tableExists = false;
+        try
+        {
+            c = messengerDB.query(tableName, null,
+                null, null, null, null, null);
+            tableExists = true;
+        }
+        catch (Exception e) {
+            System.out.println("Table not exist");
+        }
+
+        return tableExists;
     }
 }
