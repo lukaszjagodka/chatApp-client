@@ -32,4 +32,8 @@ public interface RetrofitInterface {
   @Headers({ "Content-Type: application/json;charset=UTF-8"})
   @POST("/checkcontacts")
   Call<CheckContacts> executeCheckContacts(@Header("Authorization") String authToken, @Body HashMap<String, String> map);
+
+  @Headers({ "Content-Type: application/json;charset=UTF-8"})
+  @POST("/addusertocontactlist")
+  Call<Void> executeAddUserToContactList(@Header("Authorization") String authToken, @Body HashMap<String, String> saveUserToDb);
 }
