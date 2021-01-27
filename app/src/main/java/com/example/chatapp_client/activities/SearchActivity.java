@@ -60,33 +60,18 @@ public class SearchActivity extends AppCompatActivity {
         String tableName = "addedUsers"+tableUserName.substring(0,tableUserName.indexOf("@"));
 
         messengerDB = this.openOrCreateDatabase("CommisionaireDB", MODE_PRIVATE, null);
-        messengerDB.execSQL("CREATE TABLE IF NOT EXISTS "+tableName+" (id INTEGER PRIMARY KEY, userId INTEGER, name VARCHAR, conversationName VARCHAR, timestamp INTEGER)");
+//        messengerDB.execSQL("CREATE TABLE IF NOT EXISTS "+tableName+" (id INTEGER PRIMARY KEY, userId INTEGER, name VARCHAR, conversationName VARCHAR, timestamp INTEGER)");
 
-        //new login on mobile
+        // first login on mobile device, if account exist
         if(!isTableExists(tableName)){
-            String jwt = _appPrefs.getToken();
-            HashMap<String, String> mapCheckContact = new HashMap<>();
-            mapCheckContact.put("email", tableUserName);
-            String authToken = "Bearer "+ jwt;
-            client.getServie().executeCheckContacts(authToken, mapCheckContact).enqueue(new Callback<CheckContacts>() {
-                @Override
-                public void onResponse(@NonNull Call<CheckContacts> call, @NonNull Response<CheckContacts> response) {
-                    if(response.code() == 200){
-                        CheckContacts checkContacts = response.body();
-                        assert checkContacts != null;
-                        if(checkContacts.getFindedUsers().size() == 0){
-                            updateListView(tableName);
-                        }else{
-                            Toast.makeText(SearchActivity.this, response.message(), Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                }
-                @Override
-                public void onFailure(@NonNull Call<CheckContacts> call, @NonNull Throwable t) {}
-            });
-        }else{
+            Toast.makeText(this, "Tablica nie istnieje", Toast.LENGTH_SHORT).show();
+            messengerDB.execSQL("CREATE TABLE IF NOT EXISTS "+tableName+" (id INTEGER PRIMARY KEY, userId INTEGER, name VARCHAR, conversationName VARCHAR, timestamp INTEGER)");
+            checkContacts(tableName);
+        }else{ // second and more login times
+            Toast.makeText(this, "Tablica istnieje", Toast.LENGTH_SHORT).show();
 //        deleteTable(tableName);
             updateListView(tableName);
+            checkContacts(tableName);
         }
 
         // seach user in base
@@ -159,8 +144,6 @@ public class SearchActivity extends AppCompatActivity {
                 int IntNormalIdWthDot = Integer.parseInt(StrNormalIdWthDot);
 
                 String nameAddedUser = itemString.substring(index+1);
-//                Date date = new Date();
-//                System.out.println(new Timestamp(date.getTime()));
                 boolean mm = isUserExistInDb(IntNormalIdWthDot, tableName);
                 if(mm){
                     contactListView.setVisibility(View.GONE);
@@ -209,6 +192,26 @@ public class SearchActivity extends AppCompatActivity {
                                 addedUsersListView.setVisibility(View.VISIBLE);
                                 findedUsersLabel.setVisibility(View.INVISIBLE);
                                 updateListView(tableName);
+
+                                //add new contact to postgresDb
+                                String jwt = _appPrefs.getToken();
+                                String authToken = "Bearer "+ jwt;
+                                HashMap<String, String> saveUserToDb = new HashMap<>();
+                                saveUserToDb.put("email", _appPrefs.getEmail());
+                                saveUserToDb.put("addedUserId", StrNormalIdWthDot);
+
+                                client.getServie().executeAddUserToContactList(authToken, saveUserToDb).enqueue(new Callback<Void>() {
+                                    @Override
+                                    public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
+                                        System.out.println("User added to base");
+                                    }
+
+                                    @Override
+                                    public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
+                                        Toast.makeText(SearchActivity.this,  t.getMessage(), Toast.LENGTH_LONG).show();
+                                    }
+                                });
+
                                 if(sizeOfArray(tableName)>0){
                                     for (Map.Entry<Integer, FindedUser> entry : addedUsersMap.entrySet()) {
                                         FindedUser name = entry.getValue();
@@ -367,8 +370,9 @@ public class SearchActivity extends AppCompatActivity {
         startActivity(intent);
         }
     public void deleteTable(String tableName){
-        messengerDB.execSQL("DELETE FROM "+tableName+"");
+//        messengerDB.execSQL("DELETE FROM "+tableName+"");
 //        messengerDB.execSQL("DROP TABLE "+tableName+"");
+        messengerDB.execSQL("DETACH DATABASE CommisionaireDB");
         System.out.println("Delete table");
     }
     public boolean deleteFromDb(Integer itemToDelete, String tableName){
@@ -465,5 +469,30 @@ public class SearchActivity extends AppCompatActivity {
         }
 
         return tableExists;
+    }
+    public void checkContacts(String tableName){
+        String jwt = _appPrefs.getToken();
+        HashMap<String, String> mapCheckContact = new HashMap<>();
+        mapCheckContact.put("email", _appPrefs.getEmail());
+        String authToken = "Bearer "+ jwt;
+        client.getServie().executeCheckContacts(authToken, mapCheckContact).enqueue(new Callback<CheckContacts>() {
+            @Override
+            public void onResponse(@NonNull Call<CheckContacts> call, @NonNull Response<CheckContacts> response) {
+                ArrayList<Object> fug;
+                CheckContacts checkContacts = response.body();
+                System.out.println(response.body());
+                assert checkContacts != null;
+                System.out.println("XXXXX "+checkContacts.getFindedUsers()); //null bcs server is dead ;(
+                fug = checkContacts.getFindedUsers();
+                System.out.println("fug "+fug);
+//                        if(checkContacts.getFindedUsers().size() == 0){
+//                            updateListView(tableName);
+//                        }else{
+//                            Toast.makeText(SearchActivity.this, response.message(), Toast.LENGTH_SHORT).show();
+//                        }
+            }
+            @Override
+            public void onFailure(@NonNull Call<CheckContacts> call, @NonNull Throwable t) {}
+        });
     }
 }
