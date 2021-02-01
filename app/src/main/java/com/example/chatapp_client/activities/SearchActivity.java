@@ -62,13 +62,15 @@ public class SearchActivity extends AppCompatActivity {
         messengerDB = this.openOrCreateDatabase("CommisionaireDB", MODE_PRIVATE, null);
 //        messengerDB.execSQL("CREATE TABLE IF NOT EXISTS "+tableName+" (id INTEGER PRIMARY KEY, userId INTEGER, name VARCHAR, conversationName VARCHAR, timestamp INTEGER)");
 
+        checkMessages();
+
         // first login on mobile device, if account exist
         if(!isTableExists(tableName)){
-            Toast.makeText(this, "Tablica nie istnieje", Toast.LENGTH_SHORT).show();
+//            Toast.makeText(this, "Tablica nie istnieje", Toast.LENGTH_SHORT).show();
             messengerDB.execSQL("CREATE TABLE IF NOT EXISTS "+tableName+" (id INTEGER PRIMARY KEY, userId INTEGER, name VARCHAR, conversationName VARCHAR, timestamp INTEGER)");
             checkContacts(tableName);
         }else{ // second and more login times
-            Toast.makeText(this, "Tablica istnieje", Toast.LENGTH_SHORT).show();
+//            Toast.makeText(this, "Tablica istnieje", Toast.LENGTH_SHORT).show();
 //        deleteTable(tableName);
             updateListView(tableName);
             checkContacts(tableName);
@@ -85,7 +87,6 @@ public class SearchActivity extends AppCompatActivity {
                 client.getServie().executeSearchUser(searchDataMap).enqueue(new Callback<SearchResult>() {
                     @Override
                     public void onResponse(@NonNull  Call<SearchResult> call, @NonNull Response<SearchResult> response) {
-                        if (response.code() == 200) {
                             SearchResult searchResult = response.body();
                             assert searchResult != null;
                             contactsUsers = searchResult.getFindedUsers();
@@ -104,13 +105,10 @@ public class SearchActivity extends AppCompatActivity {
                                     }
                                 }
                             }
-                        }else if (response.code() == 400) {
-                            Toast.makeText(SearchActivity.this,  response.message(), Toast.LENGTH_LONG).show();
-                        }
                     }
                     @Override
                     public void onFailure(@NonNull Call<SearchResult> call, @NonNull Throwable t) {
-                        Toast.makeText(SearchActivity.this, t.getMessage(), Toast.LENGTH_LONG).show();
+//                        Toast.makeText(SearchActivity.this, t.getMessage(), Toast.LENGTH_LONG).show();
                     }
                 });
             }
@@ -144,6 +142,26 @@ public class SearchActivity extends AppCompatActivity {
                 int IntNormalIdWthDot = Integer.parseInt(StrNormalIdWthDot);
 
                 String nameAddedUser = itemString.substring(index+1);
+
+                //add new contact to postgresDb
+                String jwt = _appPrefs.getToken();
+                String authToken = "Bearer "+ jwt;
+                HashMap<String, String> saveUserToDb = new HashMap<>();
+                saveUserToDb.put("email", _appPrefs.getEmail());
+                saveUserToDb.put("addedUserId", StrNormalIdWthDot);
+
+                client.getServie().executeAddUserToContactList(authToken, saveUserToDb).enqueue(new Callback<Void>() {
+                    @Override
+                    public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
+//                        System.out.println("User added to base");
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
+//                        Toast.makeText(SearchActivity.this,  t.getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                });
+
                 boolean mm = isUserExistInDb(IntNormalIdWthDot, tableName);
                 if(mm){
                     contactListView.setVisibility(View.GONE);
@@ -192,25 +210,6 @@ public class SearchActivity extends AppCompatActivity {
                                 addedUsersListView.setVisibility(View.VISIBLE);
                                 findedUsersLabel.setVisibility(View.INVISIBLE);
                                 updateListView(tableName);
-
-                                //add new contact to postgresDb
-                                String jwt = _appPrefs.getToken();
-                                String authToken = "Bearer "+ jwt;
-                                HashMap<String, String> saveUserToDb = new HashMap<>();
-                                saveUserToDb.put("email", _appPrefs.getEmail());
-                                saveUserToDb.put("addedUserId", StrNormalIdWthDot);
-
-                                client.getServie().executeAddUserToContactList(authToken, saveUserToDb).enqueue(new Callback<Void>() {
-                                    @Override
-                                    public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
-                                        System.out.println("User added to base");
-                                    }
-
-                                    @Override
-                                    public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
-                                        Toast.makeText(SearchActivity.this,  t.getMessage(), Toast.LENGTH_LONG).show();
-                                    }
-                                });
 
                                 if(sizeOfArray(tableName)>0){
                                     for (Map.Entry<Integer, FindedUser> entry : addedUsersMap.entrySet()) {
@@ -378,6 +377,19 @@ public class SearchActivity extends AppCompatActivity {
     public boolean deleteFromDb(Integer itemToDelete, String tableName){
         for (Map.Entry<Integer, FindedUser> entry : helperMap.entrySet()) {
             if(itemToDelete.equals(entry.getKey())){
+                Integer userId = entry.getValue().getId();
+                String jwt = _appPrefs.getToken();
+                HashMap<String, String> deleteUserFromDb = new HashMap<>();
+                deleteUserFromDb.put("email", _appPrefs.getEmail());
+                deleteUserFromDb.put("userIdToDelete", String.valueOf(userId));
+                String authToken = "Bearer "+ jwt;
+                client.getServie().executeDeleteUserFromContactList(authToken, deleteUserFromDb).enqueue(new Callback<Void>() {
+                    @Override
+                    public void onResponse(Call<Void> call, Response<Void> response) {}
+                    @Override
+                    public void onFailure(Call<Void> call, Throwable t) {}
+                });
+
                 String sql = "DELETE FROM "+tableName+" WHERE timestamp = "+itemToDelete;
                 SQLiteStatement statement = messengerDB.compileStatement(sql);
                 statement.execute();
@@ -480,11 +492,11 @@ public class SearchActivity extends AppCompatActivity {
             public void onResponse(@NonNull Call<CheckContacts> call, @NonNull Response<CheckContacts> response) {
                 ArrayList<Object> fug;
                 CheckContacts checkContacts = response.body();
-                System.out.println(response.body());
                 assert checkContacts != null;
-                System.out.println("XXXXX "+checkContacts.getFindedUsers()); //null bcs server is dead ;(
-                fug = checkContacts.getFindedUsers();
-                System.out.println("fug "+fug);
+                System.out.println("contacts on server "+checkContacts.getFindedUsers());
+//                fug = checkContacts.getFindedUsers();
+//                System.out.println("fug "+fug);
+
 //                        if(checkContacts.getFindedUsers().size() == 0){
 //                            updateListView(tableName);
 //                        }else{
@@ -493,6 +505,28 @@ public class SearchActivity extends AppCompatActivity {
             }
             @Override
             public void onFailure(@NonNull Call<CheckContacts> call, @NonNull Throwable t) {}
+        });
+    }
+    public void checkMessages(){
+        String jwt = _appPrefs.getToken();
+        HashMap<String, String> mapCheckMessages = new HashMap<>();
+        mapCheckMessages.put("email", _appPrefs.getEmail());
+        String authToken = "Bearer "+ jwt;
+        client.getServie().executeCheckMessages(authToken, mapCheckMessages).enqueue(new Callback<CheckMessages>() {
+            @Override
+            public void onResponse(@NonNull Call<CheckMessages> call, @NonNull Response<CheckMessages> response) {
+//                ArrayList<Object> offlineMessages;
+                CheckMessages checkMessages = response.body();
+                assert checkMessages != null;
+//                offlineMessages = checkMessages.getReceivedMessages();
+//                Toast.makeText(SearchActivity.this, "ok", Toast.LENGTH_SHORT).show();
+                System.out.println("offline messages "+checkMessages.getOfflineMessages());
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<CheckMessages> call, @NonNull Throwable t) {
+                System.out.println(t.getMessage());
+            }
         });
     }
 }

@@ -9,7 +9,6 @@ import android.text.TextWatcher;
 import android.util.Base64;
 import android.view.View;
 import android.widget.EditText;
-import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -95,7 +94,6 @@ public class ConversationActivity extends AppCompatActivity implements TextWatch
             System.out.println(response);
             super.onOpen(webSocket, response);
             runOnUiThread(()-> {
-                Toast.makeText(ConversationActivity.this, "Socket connected", Toast.LENGTH_SHORT).show();
                 initializeView();
 
                 setTimeout(ConversationActivity.this::ping, 30000);
@@ -134,7 +132,7 @@ public class ConversationActivity extends AppCompatActivity implements TextWatch
                     e.printStackTrace();
                 }
                 webSocket.send(jsonObject.toString());
-                System.out.println("onClosing "+webSocket +" "+code+" "+reason);
+//                System.out.println("onClosing "+webSocket +" "+code+" "+reason);
             });
         }
         @Override
@@ -148,7 +146,7 @@ public class ConversationActivity extends AppCompatActivity implements TextWatch
                     e.printStackTrace();
                 }
                 webSocket.send(jsonObject.toString());
-                System.out.println("onClosed "+webSocket +" "+code+" "+reason);
+//                System.out.println("onClosed "+webSocket +" "+code+" "+reason);
             });
         }
         @Override
@@ -261,7 +259,6 @@ public class ConversationActivity extends AppCompatActivity implements TextWatch
     @Override
     public void onBackPressed(){
         super.onBackPressed();
-//        System.out.println("onBackPressed");
         webSocket.close(1000, "closed connection");
         _appPrefs.saveSocketConn(false);
     }
