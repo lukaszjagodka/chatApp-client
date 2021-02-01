@@ -2,10 +2,7 @@ package com.example.chatapp_client.retrofit;
 
 import com.example.chatapp_client.utils.*;
 import retrofit2.Call;
-import retrofit2.http.Body;
-import retrofit2.http.Header;
-import retrofit2.http.Headers;
-import retrofit2.http.POST;
+import retrofit2.http.*;
 
 import java.util.HashMap;
 
@@ -36,4 +33,12 @@ public interface RetrofitInterface {
   @Headers({ "Content-Type: application/json;charset=UTF-8"})
   @POST("/addusertocontactlist")
   Call<Void> executeAddUserToContactList(@Header("Authorization") String authToken, @Body HashMap<String, String> saveUserToDb);
+
+  @Headers({ "Content-Type: application/json;charset=UTF-8"})
+  @POST("/deleteuserfromcontactlist")
+  Call<Void> executeDeleteUserFromContactList(@Header("Authorization") String authToken, @Body HashMap<String, String> deleteUserFromDb);
+
+  @Headers({ "Content-Type: application/json;charset=UTF-8"})
+  @POST("/checkmessages")
+  Call<CheckMessages> executeCheckMessages(@Header("Authorization") String authToken, @Body HashMap<String, String> mapCheckMessages);
 }
