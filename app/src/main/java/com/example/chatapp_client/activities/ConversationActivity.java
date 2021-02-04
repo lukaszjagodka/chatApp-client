@@ -1,6 +1,9 @@
 package com.example.chatapp_client.activities;
 
 import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteStatement;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
@@ -24,17 +27,21 @@ import org.json.JSONObject;
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Objects;
 import java.util.TimerTask;
 
 public class ConversationActivity extends AppCompatActivity implements TextWatcher {
     public AppPreferences _appPrefs;
     String myName, convName, name;
     int userId;
+    ArrayList<Object> bengbeng;
     private WebSocket webSocket;
     private EditText messageEdit;
     private View sendBtn, pickImgBtn;
     private final int IMAGE_REQUEST_ID = 1;
     private MessageAdapter messageAdapter;
+    SQLiteDatabase messengerDB;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,15 +50,27 @@ public class ConversationActivity extends AppCompatActivity implements TextWatch
         Bundle extras = getIntent().getExtras();
         _appPrefs = new AppPreferences(getApplicationContext());
 
+        messengerDB = this.openOrCreateDatabase("CommisionaireDB", MODE_PRIVATE, null);
+
         userId = extras.getInt("userId");
         name = extras.getString("name");
         myName = extras.getString("myName");
         convName = extras.getString("conversationName");
         setTitle(name);
 
+        RecyclerView recyclerView = findViewById(R.id.recyclerView);
+        messageAdapter = new MessageAdapter(getLayoutInflater());
+        recyclerView.setAdapter(messageAdapter);
+//        System.out.println("position "+messageAdapter.getItemCount());
+//        recyclerView.scrollToPosition(messageAdapter.getItemCount());
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        loadConversation();
+
         if (!_appPrefs.getSocketConn()){
             initiateSocketConnection();
         }
+
     }
 
     public Runnable initiateSocketConnection() {
@@ -114,6 +133,19 @@ public class ConversationActivity extends AppCompatActivity implements TextWatch
                         case "userevent":
                             System.out.println("message " + text);
                             messageAdapter.addItem(jsonObject);
+
+                            String userName = jsonObject.getString("name");
+                            String convName = jsonObject.getString("convName");
+                            String message = jsonObject.getString("message");
+                            int tsLong = (int) (System.currentTimeMillis()/1000);
+                            String convNameFP = convName.substring(0,8);
+                            String sql = "INSERT INTO '"+convNameFP+"' (name, message, isSent, timestamp) VALUES (?,?,?,?)";
+                            SQLiteStatement statement = messengerDB.compileStatement(sql);
+                            statement.bindString(1, userName);
+                            statement.bindString(2, message);
+                            statement.bindString(3, String.valueOf(false));
+                            statement.bindString(4, String.valueOf(tsLong));
+                            statement.execute();
                             break;
                     }
                 } catch (JSONException e) {
@@ -162,13 +194,12 @@ public class ConversationActivity extends AppCompatActivity implements TextWatch
         messageEdit = findViewById(R.id.messageEdit);
         sendBtn = findViewById(R.id.sendBtn);
         pickImgBtn = findViewById(R.id.pickImgBtn);
-        RecyclerView recyclerView = findViewById(R.id.recyclerView);
-
-        messageAdapter = new MessageAdapter(getLayoutInflater());
-        recyclerView.setAdapter(messageAdapter);
-//        System.out.println("position "+messageAdapter.getItemCount());
-//        recyclerView.scrollToPosition(messageAdapter.getItemCount());
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+//        RecyclerView recyclerView = findViewById(R.id.recyclerView);
+//        messageAdapter = new MessageAdapter(getLayoutInflater());
+//        recyclerView.setAdapter(messageAdapter);
+////        System.out.println("position "+messageAdapter.getItemCount());
+////        recyclerView.scrollToPosition(messageAdapter.getItemCount());
+//        recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         messageEdit.addTextChangedListener(this);
 
@@ -183,6 +214,16 @@ public class ConversationActivity extends AppCompatActivity implements TextWatch
                 webSocket.send(jsonObject.toString());
                 jsonObject.put("isSent", true);
                 messageAdapter.addItem(jsonObject);
+
+                int tsLong = (int) (System.currentTimeMillis()/1000);
+                String convNameFP = convName.substring(0,8);
+                String sql = "INSERT INTO '"+convNameFP+"' (name, message, isSent, timestamp) VALUES (?,?,?,?)";
+                SQLiteStatement statement = messengerDB.compileStatement(sql);
+                statement.bindString(1, myName);
+                statement.bindString(2, messageEdit.getText().toString());
+                statement.bindString(3, String.valueOf(true));
+                statement.bindString(4, String.valueOf(tsLong));
+                statement.execute();
                 resetMessageEdit();
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -275,5 +316,29 @@ public class ConversationActivity extends AppCompatActivity implements TextWatch
 //        System.out.println("onDestroy");
         webSocket.close(1000, "closed connection");
         _appPrefs.saveSocketConn(false);
+    }
+    public void loadConversation(){
+        String convNameFP = convName.substring(0,8);
+        Cursor c = messengerDB.rawQuery("SELECT * FROM '"+convNameFP+"'", null);
+        ArrayList<Object> mExampleList = new ArrayList<>();
+        if (c.moveToFirst()) {
+            do {
+                String name = c.getString(c.getColumnIndex("name"));
+                String message = c.getString(c.getColumnIndex("message"));
+                String isSent = c.getString(c.getColumnIndex("isSent"));
+                JSONObject jsonObject = new JSONObject();
+                try {
+                    jsonObject.put("name", name);
+                    jsonObject.put("message", message);
+                    jsonObject.put("isSent", isSent);
+                    mExampleList.add(jsonObject);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            } while (c.moveToNext());
+        }
+        for (Object o : mExampleList) {
+            messageAdapter.addItem((JSONObject) o);
+        }
     }
 }
