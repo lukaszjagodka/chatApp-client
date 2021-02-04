@@ -60,17 +60,14 @@ public class SearchActivity extends AppCompatActivity {
         String tableName = "addedUsers"+tableUserName.substring(0,tableUserName.indexOf("@"));
 
         messengerDB = this.openOrCreateDatabase("CommisionaireDB", MODE_PRIVATE, null);
-//        messengerDB.execSQL("CREATE TABLE IF NOT EXISTS "+tableName+" (id INTEGER PRIMARY KEY, userId INTEGER, name VARCHAR, conversationName VARCHAR, timestamp INTEGER)");
 
         checkMessages();
 
         // first login on mobile device, if account exist
         if(!isTableExists(tableName)){
-//            Toast.makeText(this, "Tablica nie istnieje", Toast.LENGTH_SHORT).show();
             messengerDB.execSQL("CREATE TABLE IF NOT EXISTS "+tableName+" (id INTEGER PRIMARY KEY, userId INTEGER, name VARCHAR, conversationName VARCHAR, timestamp INTEGER)");
             checkContacts(tableName);
         }else{ // second and more login times
-//            Toast.makeText(this, "Tablica istnieje", Toast.LENGTH_SHORT).show();
 //        deleteTable(tableName);
             updateListView(tableName);
             checkContacts(tableName);
@@ -95,7 +92,7 @@ public class SearchActivity extends AppCompatActivity {
                                     JSONArray jsonarray = new JSONArray(contactsUsers);
                                     try {
                                         for(int i=0;i < jsonarray.length();i++) {
-                                            JSONObject e = jsonarray.getJSONObject(i);
+                                         JSONObject e = jsonarray.getJSONObject(i);
                                             recivedUsers.put(e.getString("id"), e.getString("name"));
                                         }
                                         MyAdapter arrayAdapter = new MyAdapter(recivedUsers);
@@ -205,6 +202,11 @@ public class SearchActivity extends AppCompatActivity {
                                 statement.bindString(4, String.valueOf(tsLong));
                                 statement.execute();
 
+//                                if(!isTableExists(conversationName)){
+                                String convNameFP = conversationName.substring(0,8);
+                                messengerDB.execSQL("CREATE TABLE IF NOT EXISTS '"+convNameFP+"' (id INTEGER PRIMARY KEY, name VARCHAR, message VARCHAR, isSent BOOLEAN, timestamp INTEGER)");
+//                                }
+
                                 contactListView.setVisibility(View.GONE);
                                 searchText.setText("");
                                 addedUsersListView.setVisibility(View.VISIBLE);
@@ -265,8 +267,12 @@ public class SearchActivity extends AppCompatActivity {
                     Integer itemToDelete=0;
                     int count1 = 0;
                     for (Map.Entry<Integer, FindedUser> entry : helperMap.entrySet()) {
+                        FindedUser data = entry.getValue();
+
                         if(id == count1) {
                             itemToDelete = entry.getKey();
+                            System.out.println("test "+data.getConversationName());
+                            deleteConversationFDb(data.getConversationName());
                         }
                         count1++;
                     }
@@ -373,6 +379,10 @@ public class SearchActivity extends AppCompatActivity {
 //        messengerDB.execSQL("DROP TABLE "+tableName+"");
         messengerDB.execSQL("DETACH DATABASE CommisionaireDB");
         System.out.println("Delete table");
+    }
+    public void deleteConversationFDb(String convName){
+        String convNameFP = convName.substring(0,8);
+        messengerDB.execSQL("DROP TABLE '"+convNameFP+"'");
     }
     public boolean deleteFromDb(Integer itemToDelete, String tableName){
         for (Map.Entry<Integer, FindedUser> entry : helperMap.entrySet()) {
