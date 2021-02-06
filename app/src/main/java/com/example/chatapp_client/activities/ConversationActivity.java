@@ -35,7 +35,6 @@ public class ConversationActivity extends AppCompatActivity implements TextWatch
     public AppPreferences _appPrefs;
     String myName, convName, name;
     int userId;
-    ArrayList<Object> bengbeng;
     private WebSocket webSocket;
     private EditText messageEdit;
     private View sendBtn, pickImgBtn;
