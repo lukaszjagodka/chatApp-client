@@ -216,7 +216,8 @@ public class ConversationActivity extends AppCompatActivity implements TextWatch
 
                 int tsLong = (int) (System.currentTimeMillis()/1000);
                 String convNameFP = convName.substring(0,8);
-                String sql = "INSERT INTO '"+convNameFP+"' (name, message, isSent, timestamp) VALUES (?,?,?,?)";
+                String convNameLastV = "conv"+convNameFP;
+                String sql = "INSERT INTO '"+convNameLastV+"' (name, message, isSent, timestamp) VALUES (?,?,?,?)";
                 SQLiteStatement statement = messengerDB.compileStatement(sql);
                 statement.bindString(1, myName);
                 statement.bindString(2, messageEdit.getText().toString());
@@ -318,26 +319,44 @@ public class ConversationActivity extends AppCompatActivity implements TextWatch
     }
     public void loadConversation(){
         String convNameFP = convName.substring(0,8);
-        Cursor c = messengerDB.rawQuery("SELECT * FROM '"+convNameFP+"'", null);
-        ArrayList<Object> mExampleList = new ArrayList<>();
-        if (c.moveToFirst()) {
-            do {
-                String name = c.getString(c.getColumnIndex("name"));
-                String message = c.getString(c.getColumnIndex("message"));
-                String isSent = c.getString(c.getColumnIndex("isSent"));
-                JSONObject jsonObject = new JSONObject();
-                try {
-                    jsonObject.put("name", name);
-                    jsonObject.put("message", message);
-                    jsonObject.put("isSent", isSent);
-                    mExampleList.add(jsonObject);
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-            } while (c.moveToNext());
+        String convNameLastV = "conv"+convNameFP;
+        boolean iTE = isTableExists(convNameLastV);
+        if(iTE){
+            Cursor c = messengerDB.rawQuery("SELECT * FROM '"+convNameLastV+"'", null);
+            ArrayList<Object> mExampleList = new ArrayList<>();
+            if (c.moveToFirst()) {
+                do {
+                    String name = c.getString(c.getColumnIndex("name"));
+                    String message = c.getString(c.getColumnIndex("message"));
+                    String isSent = c.getString(c.getColumnIndex("isSent"));
+                    JSONObject jsonObject = new JSONObject();
+                    try {
+                        jsonObject.put("name", name);
+                        jsonObject.put("message", message);
+                        jsonObject.put("isSent", isSent);
+                        mExampleList.add(jsonObject);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                } while (c.moveToNext());
+            }
+            for (Object o : mExampleList) {
+                messageAdapter.addItem((JSONObject) o);
+            }
         }
-        for (Object o : mExampleList) {
-            messageAdapter.addItem((JSONObject) o);
+    }
+
+    public boolean isTableExists(String tableName) {
+        Cursor c = null;
+        boolean tableExists = false;
+        try {
+            c = messengerDB.query(tableName, null,
+              null, null, null, null, null);
+            tableExists = true;
+        } catch (Exception e) {
+            System.out.println("Table not exist");
         }
+
+        return tableExists;
     }
 }
