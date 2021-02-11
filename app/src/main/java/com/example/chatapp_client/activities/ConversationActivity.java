@@ -272,7 +272,7 @@ public class ConversationActivity extends AppCompatActivity implements TextWatch
             e.printStackTrace();
         }
     }
-    public static void setTimeout(Runnable runnable, int delay){
+    public void setTimeout(Runnable runnable, int delay){
         new Thread(() -> {
             try {
                 Thread.sleep(delay);
@@ -280,6 +280,9 @@ public class ConversationActivity extends AppCompatActivity implements TextWatch
             }
             catch (Exception e){
                 e.printStackTrace();
+                // add emergency settings reset after restart
+//                Intent splashActiv = new Intent(getApplicationContext(), MainActivity.class);
+//                startActivity(splashActiv);
             }
         }).start();
     }

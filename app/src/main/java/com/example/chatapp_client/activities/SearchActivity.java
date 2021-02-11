@@ -42,7 +42,9 @@ public class SearchActivity extends AppCompatActivity {
  Map<Integer, FindedUser> addedUsersMap = new LinkedHashMap<>();
  Map<Integer, FindedUser> helperMap = new LinkedHashMap<>();
  int userIndex;
- String conversationName;
+ String conversationName, tableName;
+ EditText searchText;
+ TextView findedUsersLabel;
  SQLiteDatabase messengerDB;
 
  @Override
@@ -54,26 +56,24 @@ public class SearchActivity extends AppCompatActivity {
 
   contactListView = findViewById(R.id.searchView);
   addedUsersListView = findViewById(R.id.addedUsers);
-  EditText searchText = findViewById(R.id.searchText);
-  TextView findedUsersLabel = findViewById(R.id.findedUsersLabel);
+  searchText = findViewById(R.id.searchText);
+  findedUsersLabel = findViewById(R.id.findedUsersLabel);
   HashMap<String, String> searchDataMap = new HashMap<>();
 
   String tableUserName = _appPrefs.getEmail();
-  String tableName = "addedUsers" + tableUserName.substring(0, tableUserName.indexOf("@"));
+  tableName = "addedUsers" + tableUserName.substring(0, tableUserName.indexOf("@"));
 
   messengerDB = this.openOrCreateDatabase("CommisionaireDB", MODE_PRIVATE, null);
 
   checkMessages();
-
   // first login on mobile device, if account exist
   if (!isTableExists(tableName)) {
-   messengerDB.execSQL("CREATE TABLE IF NOT EXISTS " + tableName + " (id INTEGER PRIMARY KEY, userId INTEGER, name " +
-     "VARCHAR, conversationName VARCHAR, timestamp INTEGER)");
+   messengerDB.execSQL("CREATE TABLE IF NOT EXISTS '"+tableName+"' (id INTEGER PRIMARY KEY, userId INTEGER, name VARCHAR, conversationName VARCHAR, timestamp INTEGER)");
    checkContacts(tableName);
   } else { // second and more login times
-//        deleteTable(tableName);
-   updateListView(tableName);
-   checkContacts(tableName);
+//    deleteTable(tableName);
+    updateListView(tableName);
+    checkContacts(tableName);
   }
 
   // seach user in base
@@ -167,27 +167,28 @@ public class SearchActivity extends AppCompatActivity {
 
     boolean mm = isUserExistInDb(IntNormalIdWthDot, tableName);
     if (mm) {
-     contactListView.setVisibility(View.GONE);
-     searchText.setText("");
-     addedUsersListView.setVisibility(View.VISIBLE);
-     findedUsersLabel.setVisibility(View.INVISIBLE);
-
-     MyAdapterHash addedUsersAdapter = new MyAdapterHash(helperMap);
-     addedUsersListView.setAdapter(addedUsersAdapter);
-     addedUsersAdapter.notifyDataSetChanged();
-
-     updateListView(tableName);
-     if (sizeOfArray(tableName) > 0) {
-      for (Map.Entry<Integer, FindedUser> entry : addedUsersMap.entrySet()) {
-       FindedUser name = entry.getValue();
-       if (IntNormalIdWthDot == name.getId()) {
-        goToConversation(name.getId(), name.getName(), name.getConversationName());
-       }
-      }
-     }
-     InputMethodManager imm = (InputMethodManager) getSystemService(
-       Activity.INPUT_METHOD_SERVICE);
-     imm.toggleSoftInput(InputMethodManager.HIDE_IMPLICIT_ONLY, 0);
+     fncAddIfUserExist(IntNormalIdWthDot, tableName);
+//     contactListView.setVisibility(View.GONE);
+//     searchText.setText("");
+//     addedUsersListView.setVisibility(View.VISIBLE);
+//     findedUsersLabel.setVisibility(View.INVISIBLE);
+//
+//     MyAdapterHash addedUsersAdapter = new MyAdapterHash(helperMap);
+//     addedUsersListView.setAdapter(addedUsersAdapter);
+//     addedUsersAdapter.notifyDataSetChanged();
+//
+//     updateListView(tableName);
+//     if (sizeOfArray(tableName) > 0) {
+//      for (Map.Entry<Integer, FindedUser> entry : addedUsersMap.entrySet()) {
+//       FindedUser name = entry.getValue();
+//       if (IntNormalIdWthDot == name.getId()) {
+//        goToConversation(name.getId(), name.getName(), name.getConversationName());
+//       }
+//      }
+//     }
+//     InputMethodManager imm = (InputMethodManager) getSystemService(
+//       Activity.INPUT_METHOD_SERVICE);
+//     imm.toggleSoftInput(InputMethodManager.HIDE_IMPLICIT_ONLY, 0);
     } else {
      HashMap<String, String> map = new HashMap<>();
      map.put("email", _appPrefs.getEmail());
@@ -195,7 +196,9 @@ public class SearchActivity extends AppCompatActivity {
      client.getServie().executeFindConvName(map).enqueue(new Callback<FindedConverName>() {
       @Override
       public void onResponse(@NonNull Call<FindedConverName> call, @NonNull Response<FindedConverName> response) {
-       if (response.code() == 200) {
+//       fncAddIfUserNotExist(tsLong, StrNormalIdWthDot, nameAddedUser, IntNormalIdWthDot);
+//       if (response.code() == 200) {
+
         FindedConverName result = response.body();
         assert result != null;
         conversationName = result.getConversationName();
@@ -209,8 +212,8 @@ public class SearchActivity extends AppCompatActivity {
         statement.execute();
 
         String convNameFP = conversationName.substring(0, 8);
-        messengerDB.execSQL("CREATE TABLE IF NOT EXISTS '" + convNameFP + "' (id INTEGER PRIMARY KEY, name VARCHAR, " +
-          "message VARCHAR, isSent BOOLEAN, timestamp INTEGER)");
+        String convNameLastV = "conv"+convNameFP;
+        messengerDB.execSQL("CREATE TABLE IF NOT EXISTS '" + convNameLastV + "' (id INTEGER PRIMARY KEY, name VARCHAR, message VARCHAR, isSent BOOLEAN, timestamp INTEGER)");
 
         contactListView.setVisibility(View.GONE);
         searchText.setText("");
@@ -229,9 +232,10 @@ public class SearchActivity extends AppCompatActivity {
         InputMethodManager imm = (InputMethodManager) getSystemService(
           Activity.INPUT_METHOD_SERVICE);
         imm.toggleSoftInput(InputMethodManager.HIDE_IMPLICIT_ONLY, 0);
-       } else if (response.code() == 400) {
-        Toast.makeText(SearchActivity.this, response.message(), Toast.LENGTH_LONG).show();
-       }
+
+//       } else if (response.code() == 400) {
+//        Toast.makeText(SearchActivity.this, response.message(), Toast.LENGTH_LONG).show();
+//       }
       }
 
       @Override
@@ -294,6 +298,31 @@ public class SearchActivity extends AppCompatActivity {
      .show();
    return true;
   });
+ }
+
+ // adds the user to the top of the list
+ private void fncAddIfUserExist(int intNormalIdWthDot, String tableName) {
+  contactListView.setVisibility(View.GONE);
+  searchText.setText("");
+  addedUsersListView.setVisibility(View.VISIBLE);
+  findedUsersLabel.setVisibility(View.INVISIBLE);
+
+  MyAdapterHash addedUsersAdapter = new MyAdapterHash(helperMap);
+  addedUsersListView.setAdapter(addedUsersAdapter);
+  addedUsersAdapter.notifyDataSetChanged();
+
+  updateListView(tableName);
+  if (sizeOfArray(tableName) > 0) {
+   for (Map.Entry<Integer, FindedUser> entry : addedUsersMap.entrySet()) {
+    FindedUser name = entry.getValue();
+    if (intNormalIdWthDot == name.getId()) {
+     goToConversation(name.getId(), name.getName(), name.getConversationName());
+    }
+   }
+  }
+  InputMethodManager imm = (InputMethodManager) getSystemService(
+    Activity.INPUT_METHOD_SERVICE);
+  imm.toggleSoftInput(InputMethodManager.HIDE_IMPLICIT_ONLY, 0);
  }
 
  @Override
@@ -386,15 +415,16 @@ public class SearchActivity extends AppCompatActivity {
  }
 
  public void deleteTable(String tableName) {
-//        messengerDB.execSQL("DELETE FROM "+tableName+"");
+        messengerDB.execSQL("DELETE FROM "+tableName+"");
 //        messengerDB.execSQL("DROP TABLE "+tableName+"");
-  messengerDB.execSQL("DETACH DATABASE CommisionaireDB");
+//  messengerDB.execSQL("DETACH DATABASE CommisionaireDB");
   System.out.println("Delete table");
  }
 
  public void deleteConversationFDb(String convName) {
   String convNameFP = convName.substring(0, 8);
-  messengerDB.execSQL("DROP TABLE '" + convNameFP + "'");
+  String convNameLastV = "conv"+convNameFP;
+  messengerDB.execSQL("DROP TABLE '"+convNameLastV+"'");
  }
 
  public boolean deleteFromDb(Integer itemToDelete, String tableName) {
@@ -521,7 +551,7 @@ public class SearchActivity extends AppCompatActivity {
   client.getServie().executeCheckContacts(authToken, mapCheckContact).enqueue(new Callback<CheckContacts>() {
    @Override
    public void onResponse(@NonNull Call<CheckContacts> call, @NonNull Response<CheckContacts> response) {
-    ArrayList<Object> fug;
+//    ArrayList<Object> fug;
     CheckContacts checkContacts = response.body();
     assert checkContacts != null;
     System.out.println("contacts on server " + checkContacts.getFindedUsers());
@@ -535,8 +565,7 @@ public class SearchActivity extends AppCompatActivity {
    }
 
    @Override
-   public void onFailure(@NonNull Call<CheckContacts> call, @NonNull Throwable t) {
-   }
+   public void onFailure(@NonNull Call<CheckContacts> call, @NonNull Throwable t) {}
   });
  }
 
@@ -548,13 +577,107 @@ public class SearchActivity extends AppCompatActivity {
   client.getServie().executeCheckMessages(authToken, mapCheckMessages).enqueue(new Callback<CheckMessages>() {
    @Override
    public void onResponse(@NonNull Call<CheckMessages> call, @NonNull Response<CheckMessages> response) {
-//                ArrayList<Object> offlineMessages;
     CheckMessages checkMessages = response.body();
     assert checkMessages != null;
-//                offlineMessages = checkMessages.getReceivedMessages();
-//                Toast.makeText(SearchActivity.this, "ok", Toast.LENGTH_SHORT).show();
-    System.out.println("offline messages " + checkMessages.getOfflineMessages());
+    // adds a user if it did not exist before
+    if(checkMessages.getOfflineMessages() != null){
+     for (Object o : checkMessages.getOfflineMessages()) {
+      Gson gson = new Gson();
+      String json = gson.toJson(o);
+      try{
+       JSONObject objj = new JSONObject(json);
+       String checkUserId = String.valueOf(objj.get("id"));
+       String name = (String) objj.get("name");
+       String convName = (String) objj.get("conversationName");
+       int indexForId = checkUserId.indexOf('.');
+       String userIdFromDb = checkUserId.substring(0, indexForId);
+       String StrNormalIdWthDot = userIdFromDb.substring(0, indexForId);
+       int intNormalIdWthDot = Integer.parseInt(StrNormalIdWthDot);
 
+       for (Map.Entry<Integer, FindedUser> entry : addedUsersMap.entrySet()) {
+        FindedUser usser = entry.getValue();
+        if (intNormalIdWthDot != usser.getId()) {
+         System.out.println("Dodaj usera");
+         saveToLikedHashMap(StrNormalIdWthDot, name, convName);
+        }
+       }
+
+//      Iterator it = addedUsersMap.entrySet().iterator();
+//      while (it.hasNext()) {
+//       Map.Entry pair = (Map.Entry)it.next();
+//       FindedUser usser = (FindedUser) pair.getValue();
+//       System.out.println(pair.getKey() + " = " + pair.getValue()+ " = "+usser.getId());
+//       it.remove();
+//      }
+      }catch(JSONException e){
+       e.printStackTrace();
+      }
+
+     }
+
+     System.out.println("offline messages " + checkMessages.getOfflineMessages());
+     for (Object o : checkMessages.getOfflineMessages()) {
+      System.out.println(o);
+      Gson gson = new Gson();
+      String json = gson.toJson(o);
+      try {
+       JSONObject obj = new JSONObject(json);
+       String userId = String.valueOf(obj.get("id"));
+       String name = (String) obj.get("name");
+       String message = (String) obj.get("message");
+       String convName = (String) obj.get("conversationName");
+       String createdAt = (String) obj.get("createdAt");
+       String convNameFP = convName.substring(0, 8);
+       String convNameLastV = "conv"+convNameFP;
+       if (isTableExists(convNameLastV)) {
+//       System.out.println("Istnieje");
+        String sql = "INSERT INTO '"+convNameLastV+"' (name, message, isSent, timestamp) VALUES (?,?,?,?)";
+        SQLiteStatement statement = messengerDB.compileStatement(sql);
+        statement.bindString(1, name);
+        statement.bindString(2, message);
+        statement.bindString(3, String.valueOf(false));
+        statement.bindString(4, createdAt);
+        statement.execute();
+
+        //      String userIdFromDbb = userId;
+//       int indexForId = userId.indexOf('.');
+//       String userIdFromDb = userId.substring(0, indexForId);
+//
+//       String StrNormalIdWthDot = userIdFromDb.substring(0, indexForId);
+//       int IntNormalIdWthDot = Integer.parseInt(StrNormalIdWthDot);
+//      System.out.println(isUserExistInDb(IntNormalIdWthDot, String tableName));
+//       for (Map.Entry<Integer, FindedUser> entry : addedUsersMap.entrySet()) {
+//        FindedUser usser = entry.getValue();
+//        if (IntNormalIdWthDot != usser.getId()) {
+////        goToConversation(name.getId(), name.getName(), conversationName);
+//         System.out.println("Dodaj usera");
+//        }
+//       }
+       } else {
+        System.out.println("Brak " + convNameLastV);
+        messengerDB.execSQL("CREATE TABLE IF NOT EXISTS '"+convNameLastV+"' (id INTEGER PRIMARY KEY, name VARCHAR, message VARCHAR, isSent BOOLEAN, timestamp INTEGER)");
+
+        String sql = "INSERT INTO '"+convNameLastV+"' (name VARCHAR, message VARCHAR, isSent BOOLEAN, timestamp INTEGER) VALUES (?,?,?,?)";
+        SQLiteStatement statement = messengerDB.compileStatement(sql);
+        statement.bindString(1, name);
+        statement.bindString(2, message);
+        statement.bindString(3, String.valueOf(false));
+        statement.bindString(4, createdAt);
+        statement.execute();
+
+        //      String userIdFromDbb = userId;
+
+//      System.out.println(isUserExistInDb(IntNormalIdWthDot, String tableName));
+
+       }
+
+      } catch (JSONException e) {
+       e.printStackTrace();
+      }
+     }
+    }else{
+     System.out.println(" We have a null");
+    }
    }
 
    @Override
@@ -562,5 +685,20 @@ public class SearchActivity extends AppCompatActivity {
     System.out.println(t.getMessage());
    }
   });
+ }
+ private void saveToLikedHashMap(String strNormalIdWthDot, String name, String convName){
+  int tsLong = (int) (System.currentTimeMillis() / 1000);
+//        FindedConverName result = new FindedConverName();
+//        conversationName = result.getConversationName();
+//        fncAddIfUserNotExist(tsLong, StrNormalIdWthDot, name, intNormalIdWthDot);
+  String sql = "INSERT INTO " + tableName + " (userId, name, conversationName, timestamp) VALUES (?,?,?,?)";
+  SQLiteStatement statement = messengerDB.compileStatement(sql);
+  statement.bindString(1, strNormalIdWthDot);
+  statement.bindString(2, name);
+  statement.bindString(3, convName);
+  statement.bindString(4, String.valueOf(tsLong));
+  statement.execute();
+
+  updateListView(tableName);
  }
 }
