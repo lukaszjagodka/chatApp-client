@@ -138,7 +138,8 @@ public class ConversationActivity extends AppCompatActivity implements TextWatch
                             String message = jsonObject.getString("message");
                             int tsLong = (int) (System.currentTimeMillis()/1000);
                             String convNameFP = convName.substring(0,8);
-                            String sql = "INSERT INTO '"+convNameFP+"' (name, message, isSent, timestamp) VALUES (?,?,?,?)";
+                            String convNameLastV = "conv"+convNameFP;
+                            String sql = "INSERT INTO '"+convNameLastV+"' (name, message, isSent, timestamp) VALUES (?,?,?,?)";
                             SQLiteStatement statement = messengerDB.compileStatement(sql);
                             statement.bindString(1, userName);
                             statement.bindString(2, message);
@@ -217,6 +218,11 @@ public class ConversationActivity extends AppCompatActivity implements TextWatch
                 int tsLong = (int) (System.currentTimeMillis()/1000);
                 String convNameFP = convName.substring(0,8);
                 String convNameLastV = "conv"+convNameFP;
+                try{
+                    messengerDB.execSQL("CREATE TABLE IF NOT EXISTS '"+convNameLastV+"' (id INTEGER PRIMARY KEY, name VARCHAR, message VARCHAR, isSent BOOLEAN, timestamp INTEGER)");
+                }catch(Exception e){
+                    System.out.println(e);
+                }
                 String sql = "INSERT INTO '"+convNameLastV+"' (name, message, isSent, timestamp) VALUES (?,?,?,?)";
                 SQLiteStatement statement = messengerDB.compileStatement(sql);
                 statement.bindString(1, myName);
